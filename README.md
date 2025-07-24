@@ -1,36 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 応用情報学習アプリ
 
-## Getting Started
+応用情報技術者試験の勉強を支援するインタラクティブなWebアプリケーションです。ネットワーク、データベース、アルゴリズムなどの重要な分野を実際に体験しながら学習できます。
 
-First, run the development server:
+## 機能一覧
 
+### 🌐 ネットワーク学習
+- OSI参照モデルの可視化
+- レイヤー別プロトコル学習
+- パケット伝送シミュレーション
+- ネットワーク練習問題
+
+### 🗄️ データベース学習
+- SQL文の実習（SELECT、WHERE、JOIN）
+- データベース正規化の段階的学習
+- ERモデルの設計
+- インタラクティブなクエリ実行
+
+### 🔄 アルゴリズム学習
+- ソートアルゴリズムの視覚化（バブルソート、選択ソート、挿入ソート）
+- データ構造の実演（スタック、キュー、二分木）
+- 計算量の理解
+- リアルタイムアニメーション
+
+### 🔒 セキュリティ学習
+- 暗号化技術の基礎
+- 認証システムの仕組み
+- アクセス制御
+- セキュリティ脅威と対策
+
+### 💻 システム開発
+- ソフトウェアライフサイクル
+- プロジェクト管理手法
+- 設計技法とドキュメント
+- 品質管理
+
+### 📝 模擬試験
+- 本番形式の問題演習
+- 制限時間付きテスト
+- 詳細な解答解説
+- 分野別結果分析
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 15 (App Router)
+- **言語**: TypeScript
+- **スタイリング**: Tailwind CSS
+- **デプロイ**: Vercel
+- **開発ツール**: ESLint
+
+## 開発環境のセットアップ
+
+### 前提条件
+- Node.js 18.0以上
+- npm または yarn
+
+### インストールと起動
+
+1. リポジトリをクローン
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd network
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 依存関係をインストール
+```bash
+npm install
+# または
+yarn install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. 開発サーバーを起動
+```bash
+npm run dev
+# または
+yarn dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. ブラウザで [http://localhost:3000](http://localhost:3000) を開く
 
-## Learn More
+### その他のコマンド
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# プロダクションビルド
+npm run build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 本番サーバー起動
+npm run start
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Lintチェック
+npm run lint
+```
 
-## Deploy on Vercel
+## Vercelへのデプロイ
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+このアプリケーションはVercelで簡単にデプロイできます：
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. [Vercel](https://vercel.com) にアカウントを作成
+2. GitHubリポジトリを接続
+3. 自動デプロイが開始されます
+
+### 手動デプロイ
+
+```bash
+npm install -g vercel
+vercel
+```
+
+## プロジェクト構造
+
+```
+src/
+├── app/                  # App Routerページ
+│   ├── page.tsx         # ホームページ
+│   ├── network/         # ネットワーク学習
+│   ├── database/        # データベース学習
+│   ├── algorithm/       # アルゴリズム学習
+│   ├── security/        # セキュリティ学習
+│   ├── development/     # システム開発
+│   └── exam/           # 模擬試験
+├── components/          # 再利用可能なコンポーネント
+├── lib/                # ユーティリティ関数
+├── data/               # 学習用データ
+└── types/              # TypeScript型定義
+```
+
+## 学習の進め方
+
+1. **基礎学習**: 各分野のページで基本概念を学習
+2. **実践演習**: インタラクティブな機能で理解を深める
+3. **知識確認**: 練習問題で理解度をチェック
+4. **総合評価**: 模擬試験で実力を測定
+
+## 貢献
+
+バグ報告や機能要望、プルリクエストを歓迎します。
+
+## ライセンス
+
+MIT License
+
+## 開発者
+
+応用情報技術者試験の学習効率向上を目指して開発されました。
