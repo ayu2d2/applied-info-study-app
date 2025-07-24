@@ -132,11 +132,74 @@ const sampleQueries: SQLQuery[] = [
     result: ['average_age: 30.0']
   },
   {
-    id: 18,
-    name: 'MAX/MIN関数',
-    description: '最高・最低年齢を取得',
-    query: 'SELECT MAX(age) as max_age, MIN(age) as min_age FROM customers;',
-    result: ['max_age: 35, min_age: 25']
+    id: 19,
+    name: 'DISTINCT（重複排除）',
+    description: '射影で列を取得する際の重複排除',
+    query: 'SELECT DISTINCT department FROM employees;',
+    result: ['営業部', '開発部', '総務部']
+  },
+  {
+    id: 20,
+    name: 'UNION（和集合）',
+    description: '2つのテーブルの結果を結合',
+    query: 'SELECT name FROM customers UNION SELECT name FROM suppliers;',
+    result: ['田中太郎', '佐藤花子', '鈴木一郎', '株式会社ABC', '株式会社XYZ']
+  },
+  {
+    id: 21,
+    name: 'UNION ALL（重複含む結合）',
+    description: 'UNION ALLは重複行も含めて結合',
+    query: 'SELECT name FROM customers UNION ALL SELECT name FROM suppliers;',
+    result: ['田中太郎', '佐藤花子', '鈴木一郎', '田中太郎', '株式会社ABC', '株式会社XYZ']
+  },
+  {
+    id: 22,
+    name: 'BETWEEN（範囲指定）',
+    description: '値の範囲を指定してデータを取得',
+    query: 'SELECT * FROM employees WHERE age BETWEEN 25 AND 35;',
+    result: ['社員ID: 1, 名前: 田中太郎, 年齢: 30', '社員ID: 2, 名前: 佐藤花子, 年齢: 25']
+  },
+  {
+    id: 23,
+    name: 'IN演算子',
+    description: '指定した値の集合に含まれるデータを取得',
+    query: 'SELECT * FROM employees WHERE department IN (\'営業部\', \'開発部\');',
+    result: ['営業部の社員データ', '開発部の社員データ']
+  },
+  {
+    id: 24,
+    name: 'LIKE（あいまい検索）',
+    description: 'パターンマッチングでデータを検索',
+    query: 'SELECT * FROM customers WHERE name LIKE \'田中%\';',
+    result: ['顧客ID: 1, 名前: 田中太郎, 年齢: 30']
+  },
+  {
+    id: 25,
+    name: 'IS NULL',
+    description: 'NULL値の判定',
+    query: 'SELECT * FROM employees WHERE phone IS NULL;',
+    result: ['電話番号が未登録の社員データ']
+  },
+  {
+    id: 26,
+    name: 'CHECK制約',
+    description: '列の値に制約を設定',
+    query: 'CREATE TABLE products (id INT, price INT CHECK (price > 0));',
+    result: ['テーブル作成成功（価格は正の値のみ）']
+  },
+  {
+    id: 27,
+    name: 'UNIQUE制約',
+    description: '列の値の重複を認めない制約',
+    query: 'CREATE TABLE users (id INT PRIMARY KEY, email VARCHAR(100) UNIQUE);',
+    result: ['テーブル作成成功（メールアドレスは一意）']
+  },
+  {
+    id: 28,
+    name: 'FOREIGN KEY（CASCADE）',
+    description: '参照整合性制約（連鎖削除）',
+    query: 'ALTER TABLE orders ADD FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;',
+    result: ['外部キー制約追加（顧客削除時に関連注文も削除）']
   }
 ];
 
@@ -175,7 +238,86 @@ const normalizationSteps: NormalizationStep[] = [
 export default function DatabasePage() {
   const [selectedQuery, setSelectedQuery] = useState<SQLQuery | null>(null);
   const [selectedNormalization, setSelectedNormalization] = useState<NormalizationStep | null>(null);
-  const [activeTab, setActiveTab] = useState<'sql' | 'normalization' | 'er'>('sql');
+  const [activeTab, setActiveTab] = useState<'sql' | 'normalization' | 'er' | 'quiz'>('sql');
+  const [currentQuiz, setCurrentQuiz] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showQuizResult, setShowQuizResult] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+
+  // データベース実践問題
+  const databaseQuiz = [
+    {
+      id: 1,
+      question: "射影の操作で重複を排除するSQL文はどれですか？",
+      options: [
+        "SELECT * FROM table",
+        "SELECT DISTINCT column FROM table", 
+        "SELECT UNIQUE column FROM table",
+        "SELECT column FROM table GROUP BY column"
+      ],
+      correct: 1,
+      explanation: "射影で重複を排除するにはSELECT DISTINCTを使用します。"
+    },
+    {
+      id: 2,
+      question: "ACID特性の「A」が表すものは？",
+      options: [
+        "Availability（可用性）",
+        "Atomicity（原子性）",
+        "Accuracy（正確性）", 
+        "Authentication（認証）"
+      ],
+      correct: 1,
+      explanation: "ACID特性のAはAtomicity（原子性）で、トランザクションが全て実行されるか全て未実行かのどちらかになることを表します。"
+    },
+    {
+      id: 3,
+      question: "第2正規形について正しい説明はどれですか？",
+      options: [
+        "繰り返し項目を排除する",
+        "主キー以外の項目に従属しないようにする",
+        "推移関数従属を排除する",
+        "原子的な値のみにする"
+      ],
+      correct: 1,
+      explanation: "第2正規形は主キーではない項目に従属している項目を排除します。"
+    },
+    {
+      id: 4,
+      question: "CAP定理で同時に満たせるのは最大いくつですか？",
+      options: ["1つ", "2つ", "3つ", "制限なし"],
+      correct: 1,
+      explanation: "CAP定理では、Consistency（一貫性）、Availability（可用性）、Partition tolerance（分断耐性）のうち、分散システムでは最大2つまでしか同時に満たせません。"
+    },
+    {
+      id: 5,
+      question: "CASCADE制約の効果として正しいものは？",
+      options: [
+        "重複データを防ぐ",
+        "NULL値を防ぐ",
+        "参照先が削除されたら参照元も削除される",
+        "データ型を制限する"
+      ],
+      correct: 2,
+      explanation: "CASCADE制約は参照される側（親）のデータが削除されたときに、それを参照している子データも連鎖的に削除される制約です。"
+    }
+  ];
+
+  const handleQuizAnswer = (answerIndex: number) => {
+    setSelectedAnswer(answerIndex);
+    if (answerIndex === databaseQuiz[currentQuiz].correct) {
+      setQuizScore(quizScore + 1);
+    }
+    setShowQuizResult(true);
+  };
+
+  const nextQuiz = () => {
+    if (currentQuiz < databaseQuiz.length - 1) {
+      setCurrentQuiz(currentQuiz + 1);
+      setSelectedAnswer(null);
+      setShowQuizResult(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100 dark:from-gray-900 dark:to-gray-800">
@@ -225,6 +367,16 @@ export default function DatabasePage() {
             >
               ERモデル
             </button>
+            <button
+              onClick={() => setActiveTab('quiz')}
+              className={`pb-2 px-4 font-medium ${
+                activeTab === 'quiz'
+                  ? 'border-b-2 border-green-500 text-green-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              実践問題
+            </button>
           </div>
         </div>
 
@@ -237,7 +389,7 @@ export default function DatabasePage() {
                 📖 SQL基礎解説
               </h2>
               
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {/* SELECT文の基本 */}
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
@@ -261,30 +413,28 @@ export default function DatabasePage() {
                   </div>
                 </div>
 
-                {/* JOINの種類 */}
+                {/* 射影と選択 */}
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-3">
-                    JOINの種類
+                    射影と選択
                   </h3>
                   <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
                     <div>
-                      <strong>INNER JOIN:</strong> 両テーブルにある データのみ
+                      <strong>射影（Projection）:</strong> 列だけを取得
                     </div>
                     <div>
-                      <strong>LEFT JOIN:</strong> 左テーブルの全データ + 右テーブルの一致データ
+                      <strong>SELECT DISTINCT:</strong> 重複を排除して取得
                     </div>
                     <div>
-                      <strong>RIGHT JOIN:</strong> 右テーブルの全データ + 左テーブルの一致データ
-                    </div>
-                    <div>
-                      <strong>FULL OUTER JOIN:</strong> 両テーブルの全データ
+                      <strong>選択（Selection）:</strong> 行の条件で絞り込み
                     </div>
                     <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
                       <code>
-                        SELECT a.列名, b.列名<br/>
-                        FROM テーブルA a<br/>
-                        LEFT JOIN テーブルB b<br/>
-                        ON a.id = b.id;
+                        -- 射影（列選択）<br/>
+                        SELECT DISTINCT department<br/>
+                        FROM employees;<br/><br/>
+                        -- 選択（行選択）<br/>
+                        WHERE age &gt; 30;
                       </code>
                     </div>
                   </div>
@@ -310,65 +460,120 @@ export default function DatabasePage() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* サブクエリ */}
-                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-3">
-                    サブクエリの種類
-                  </h3>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
-                    <div><strong>スカラサブクエリ:</strong> 1つの値を返す</div>
-                    <div><strong>相関サブクエリ:</strong> 外部クエリを参照</div>
-                    <div><strong>EXISTS:</strong> 存在チェック</div>
-                    <div><strong>IN:</strong> 値リストとの照合</div>
-                    <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
-                      <code>
-                        SELECT * FROM customers<br/>
-                        WHERE age &gt; (<br/>
-                        &nbsp;&nbsp;SELECT AVG(age)<br/>
-                        &nbsp;&nbsp;FROM customers<br/>
-                        );
-                      </code>
-                    </div>
-                  </div>
-                </div>
-
-                {/* インデックス */}
+              {/* データベース理論解説 */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* ACID特性 */}
                 <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-3">
-                    インデックス
+                    ACID特性
                   </h3>
                   <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
-                    <div><strong>作成:</strong> CREATE INDEX</div>
-                    <div><strong>効果:</strong> 検索速度向上</div>
-                    <div><strong>デメリット:</strong> 更新コスト増</div>
-                    <div><strong>種類:</strong> B-tree, Hash, Bitmap</div>
-                    <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
-                      <code>
-                        CREATE INDEX idx_name<br/>
-                        ON customers (name);<br/><br/>
-                        DROP INDEX idx_name;
-                      </code>
-                    </div>
-                  </div>
-                </div>
-
-                {/* トランザクション */}
-                <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-teal-800 dark:text-teal-200 mb-3">
-                    トランザクション
-                  </h3>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
-                    <div><strong>BEGIN:</strong> トランザクション開始</div>
-                    <div><strong>COMMIT:</strong> 変更を確定</div>
-                    <div><strong>ROLLBACK:</strong> 変更を取り消し</div>
-                    <div><strong>ACID特性:</strong> 原子性、一貫性、独立性、永続性</div>
+                    <div><strong>Atomicity（原子性）:</strong> 全て実行か全て未実行</div>
+                    <div><strong>Consistency（一貫性）:</strong> 整合性の維持</div>
+                    <div><strong>Isolation（独立性）:</strong> 他の処理に影響されない</div>
+                    <div><strong>Durability（永続性）:</strong> 確定した変更は永続化</div>
                     <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
                       <code>
                         BEGIN;<br/>
-                        UPDATE accounts SET balance = balance - 100 WHERE id = 1;<br/>
-                        UPDATE accounts SET balance = balance + 100 WHERE id = 2;<br/>
-                        COMMIT;
+                        UPDATE account SET balance = balance - 100 WHERE id = 1;<br/>
+                        UPDATE account SET balance = balance + 100 WHERE id = 2;<br/>
+                        COMMIT; -- または ROLLBACK;
+                      </code>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 正規化 */}
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-3">
+                    正規化の重要ポイント
+                  </h3>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                    <div><strong>第1正規形:</strong> 原子的な値のみ</div>
+                    <div><strong>第2正規形:</strong> 主キー以外に従属しない</div>
+                    <div><strong>第3正規形:</strong> 推移関数従属を排除</div>
+                    <div><strong>ボイス・コッド正規形:</strong> より厳密な正規化</div>
+                    <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                      💡 主キーの見つけ方：一意に決まるかどうかを調べる
+                    </div>
+                  </div>
+                </div>
+
+                {/* CAP定理 */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-indigo-800 dark:text-indigo-200 mb-3">
+                    CAP定理（分散DB）
+                  </h3>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                    <div><strong>Consistency:</strong> データの一貫性</div>
+                    <div><strong>Availability:</strong> 可用性</div>
+                    <div><strong>Partition tolerance:</strong> 分断耐性</div>
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                      分散システムでは3つのうち2つしか同時に満たせない
+                    </div>
+                    <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
+                      <code>
+                        二相コミットプロトコル：<br/>
+                        全ノードがコミット可能な時のみ実行
+                      </code>
+                    </div>
+                  </div>
+                </div>
+
+                {/* データベース種類 */}
+                <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-teal-800 dark:text-teal-200 mb-3">
+                    データベースの種類
+                  </h3>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                    <div><strong>関係データベース:</strong> テーブル形式</div>
+                    <div><strong>オブジェクト指向DB:</strong> 複雑な処理を表現</div>
+                    <div><strong>ドキュメントDB:</strong> JSON/XML形式</div>
+                    <div><strong>データレイク:</strong> そのままの形で保存</div>
+                    <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                      💡 複雑でバラバラな時はドキュメント型を使用
+                    </div>
+                  </div>
+                </div>
+
+                {/* ER図・スキーマ */}
+                <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-pink-800 dark:text-pink-200 mb-3">
+                    ER図・3層スキーマ
+                  </h3>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                    <div><strong>概念スキーマ:</strong> ER図で表現</div>
+                    <div><strong>外部スキーマ:</strong> ユーザー視点</div>
+                    <div><strong>内部スキーマ:</strong> インデックス等</div>
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                      多対多関係は連関エンティティで1対多に分解
+                    </div>
+                    <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
+                      <code>
+                        クラス多重度：<br/>
+                        1..* （1以上）<br/>
+                        0..1 （0または1）
+                      </code>
+                    </div>
+                  </div>
+                </div>
+
+                {/* トランザクション・障害回復 */}
+                <div className="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                    トランザクション・障害回復
+                  </h3>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                    <div><strong>チェックポイント:</strong> 2次記憶に保存</div>
+                    <div><strong>ロールフォワード:</strong> チェックポイント後の完了分</div>
+                    <div><strong>ロールバック:</strong> 未完了のトランザクション</div>
+                    <div><strong>デッドロック:</strong> 相互待ち状態</div>
+                    <div className="mt-3 bg-white dark:bg-gray-700 p-2 rounded text-xs">
+                      <code>
+                        データベース再編成：<br/>
+                        データを再配置して最適化
                       </code>
                     </div>
                   </div>
@@ -590,6 +795,114 @@ export default function DatabasePage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 実践問題タブ */}
+        {activeTab === 'quiz' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
+              🎯 データベース実践問題
+            </h2>
+            
+            {currentQuiz < databaseQuiz.length ? (
+              <div>
+                <div className="mb-4">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    問題 {currentQuiz + 1} / {databaseQuiz.length}
+                  </span>
+                </div>
+                
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                    {databaseQuiz[currentQuiz].question}
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {databaseQuiz[currentQuiz].options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleQuizAnswer(index)}
+                        disabled={showQuizResult}
+                        className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${
+                          showQuizResult
+                            ? index === databaseQuiz[currentQuiz].correct
+                              ? 'bg-green-100 border-green-500 text-green-800 dark:bg-green-900/30 dark:border-green-600 dark:text-green-200'
+                              : index === selectedAnswer && index !== databaseQuiz[currentQuiz].correct
+                              ? 'bg-red-100 border-red-500 text-red-800 dark:bg-red-900/30 dark:border-red-600 dark:text-red-200'
+                              : 'bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'
+                            : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {showQuizResult && (
+                  <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">解説</h4>
+                    <p className="text-blue-700 dark:text-blue-300">
+                      {databaseQuiz[currentQuiz].explanation}
+                    </p>
+                  </div>
+                )}
+
+                {showQuizResult && (
+                  <button
+                    onClick={nextQuiz}
+                    className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    {currentQuiz < databaseQuiz.length - 1 ? '次の問題' : '結果を見る'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                  お疲れさまでした！
+                </h3>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-4">
+                  {quizScore} / {databaseQuiz.length} 正解
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  正解率: {((quizScore / databaseQuiz.length) * 100).toFixed(1)}%
+                </p>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-6 mb-6">
+                  <h4 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4">
+                    📚 復習ポイント
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-700 dark:text-blue-300">
+                    <div>
+                      <strong>• 射影と選択:</strong> SELECT DISTINCT で重複排除
+                    </div>
+                    <div>
+                      <strong>• ACID特性:</strong> Atomicity, Consistency, Isolation, Durability
+                    </div>
+                    <div>
+                      <strong>• 正規化:</strong> 1NF→2NF→3NF→BCNF の順で実施
+                    </div>
+                    <div>
+                      <strong>• CAP定理:</strong> 分散システムでは最大2つまで
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setCurrentQuiz(0);
+                    setSelectedAnswer(null);
+                    setShowQuizResult(false);
+                    setQuizScore(0);
+                  }}
+                  className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  もう一度挑戦
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
