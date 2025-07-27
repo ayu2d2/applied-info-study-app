@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
+import AppLayout from '@/components/AppLayout';
 
 export default function MaterialsPage() {
   // プロ級の状態管理
@@ -338,6 +338,171 @@ export default function MaterialsPage() {
           ]
         }
       ]
+    },
+    'uml-diagrams': {
+      title: 'UML図設計マスター',
+      category: 'protocols',
+      level: 'intermediate',
+      description: 'システム設計に必須のUML図を体系的に理解',
+      keywords: ['UML', 'クラス図', 'アクティビティ図', '状態遷移図', 'ユースケース図'],
+      estimatedTime: '45分',
+      difficulty: 4,
+      diagramCategories: [
+        {
+          name: '構造図 (Structure Diagrams)',
+          icon: '🏗️',
+          color: 'bg-blue-100',
+          description: 'システムの静的構造を表現',
+          diagrams: [
+            {
+              name: 'クラス図',
+              symbol: '📋',
+              purpose: 'クラス間の関係と構造を表現',
+              elements: ['クラス', '属性', 'メソッド', '関連', '継承', '実装'],
+              useCase: 'オブジェクト指向設計の基本設計',
+              example: '顧客クラス ← 注文クラス → 商品クラス',
+              notation: {
+                class: '矩形（クラス名、属性、メソッド）',
+                association: '実線（関連）',
+                inheritance: '三角矢印（継承）',
+                composition: '黒菱形（コンポジション）',
+                aggregation: '白菱形（集約）'
+              }
+            },
+            {
+              name: 'オブジェクト図',
+              symbol: '🎯',
+              purpose: '特定時点でのオブジェクトの状態を表現',
+              elements: ['オブジェクト', 'インスタンス', '属性値', 'リンク'],
+              useCase: 'クラス図の具体例やテストケース設計',
+              example: '田中太郎:顧客 → 注文001:注文',
+              notation: {
+                object: '矩形（オブジェクト名:クラス名）',
+                link: '実線（リンク）',
+                value: '属性名 = 値'
+              }
+            }
+          ]
+        },
+        {
+          name: '振る舞い図 (Behavior Diagrams)',
+          icon: '⚡',
+          color: 'bg-green-100',
+          description: 'システムの動的振る舞いを表現',
+          diagrams: [
+            {
+              name: 'ユースケース図',
+              symbol: '👤',
+              purpose: 'システムの機能とアクターの関係を表現',
+              elements: ['アクター', 'ユースケース', 'システム境界', '関連'],
+              useCase: '要件定義とシステム機能の整理',
+              example: '顧客 → 商品注文、管理者 → 在庫管理',
+              notation: {
+                actor: '棒人間（アクター）',
+                usecase: '楕円（ユースケース）',
+                system: '矩形（システム境界）',
+                association: '実線（関連）'
+              }
+            },
+            {
+              name: 'アクティビティ図',
+              symbol: '🔄',
+              purpose: '処理の流れとアクティビティを表現',
+              elements: ['アクティビティ', '判定', '開始/終了', '分岐/合流', 'スイムレーン'],
+              useCase: 'ビジネスプロセスやアルゴリズムの設計',
+              example: '注文受付 → 在庫確認 → 発送処理',
+              notation: {
+                activity: '角丸矩形（アクティビティ）',
+                decision: '菱形（判定）',
+                start: '黒丸（開始）',
+                end: '二重丸（終了）',
+                fork: '太線（分岐/合流）'
+              }
+            },
+            {
+              name: '状態遷移図',
+              symbol: '🔀',
+              purpose: 'オブジェクトの状態変化を表現',
+              elements: ['状態', '遷移', 'イベント', 'ガード条件', 'アクション'],
+              useCase: 'システムの状態管理と制御設計',
+              example: '待機 → 処理中 → 完了 → 待機',
+              notation: {
+                state: '角丸矩形（状態）',
+                transition: '矢印（遷移）',
+                event: 'イベント名/アクション',
+                guard: '[条件]',
+                initial: '黒丸（初期状態）'
+              }
+            }
+          ]
+        },
+        {
+          name: '相互作用図 (Interaction Diagrams)',
+          icon: '🤝',
+          color: 'bg-purple-100',
+          description: 'オブジェクト間の相互作用を表現',
+          diagrams: [
+            {
+              name: 'シーケンス図',
+              symbol: '📊',
+              purpose: '時系列でのオブジェクト間メッセージ交換を表現',
+              elements: ['ライフライン', 'メッセージ', 'アクティベーション', '複合フラグメント'],
+              useCase: 'システム間連携や処理シーケンスの設計',
+              example: '顧客 → システム → データベース',
+              notation: {
+                lifeline: '縦線（ライフライン）',
+                message: '矢印（メッセージ）',
+                activation: '矩形（アクティベーション）',
+                return: '点線矢印（戻り値）'
+              }
+            },
+            {
+              name: 'コミュニケーション図',
+              symbol: '💬',
+              purpose: 'オブジェクト間の構造的関係とメッセージを表現',
+              elements: ['オブジェクト', 'リンク', 'メッセージ', 'シーケンス番号'],
+              useCase: 'オブジェクト間の協調関係の設計',
+              example: '1: 注文() → 2: 在庫確認() → 3: 発送()',
+              notation: {
+                object: '矩形（オブジェクト）',
+                link: '実線（リンク）',
+                message: 'シーケンス番号: メッセージ名',
+                sequence: '番号付きメッセージ'
+              }
+            }
+          ]
+        }
+      ],
+      diagramComparison: [
+        {
+          aspect: '主な用途',
+          class: 'システムの静的構造設計',
+          usecase: 'システム機能の要件整理',
+          activity: 'プロセスフローの設計',
+          state: 'オブジェクトの状態管理'
+        },
+        {
+          aspect: '設計段階',
+          class: '詳細設計',
+          usecase: '要件定義',
+          activity: '基本設計・詳細設計',
+          state: '詳細設計'
+        },
+        {
+          aspect: '表現対象',
+          class: 'クラス間の関係',
+          usecase: 'システムと利用者の関係',
+          activity: '処理の流れ',
+          state: '状態の変化'
+        },
+        {
+          aspect: '時間軸',
+          class: '静的（時間に依存しない）',
+          usecase: '静的（機能の整理）',
+          activity: '動的（処理の順序）',
+          state: '動的（状態の変化）'
+        }
+      ]
     }
   };
 
@@ -366,11 +531,8 @@ export default function MaterialsPage() {
   );
 
   return (
-    <AppLayout 
-      title="📚 学習マテリアル"
-      description="応用情報技術者試験の重要概念を体系的に学習"
-    >
-      <div className="space-y-8">
+    <AppLayout>
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* プロ級のヘッダーセクション */}
         <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 rounded-2xl text-white p-8 shadow-2xl">
           <div className="max-w-4xl mx-auto text-center">
@@ -966,6 +1128,164 @@ export default function MaterialsPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* UML図詳細表示 */}
+                  {key === 'uml-diagrams' && 'diagramCategories' in concept && (
+                    <div className="space-y-8">
+                      {/* UML図カテゴリ別表示 */}
+                      {concept.diagramCategories.map((category: any, index: number) => (
+                        <div key={index} className={`${category.color} rounded-lg p-5`}>
+                          <div className="flex items-center mb-4">
+                            <span className="text-3xl mr-3">{category.icon}</span>
+                            <div>
+                              <h4 className="text-xl font-bold text-gray-800">{category.name}</h4>
+                              <p className="text-sm text-gray-600">{category.description}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-6">
+                            {category.diagrams.map((diagram: any, i: number) => (
+                              <div key={i} className="bg-white/80 rounded-lg p-4">
+                                <div className="flex items-center mb-3">
+                                  <span className="text-2xl mr-3">{diagram.symbol}</span>
+                                  <h5 className="text-lg font-bold text-gray-800">{diagram.name}</h5>
+                                </div>
+                                
+                                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                  <div>
+                                    <h6 className="font-semibold text-gray-800 mb-2">📝 目的</h6>
+                                    <p className="text-sm text-gray-700">{diagram.purpose}</p>
+                                  </div>
+                                  <div>
+                                    <h6 className="font-semibold text-gray-800 mb-2">🎯 活用場面</h6>
+                                    <p className="text-sm text-gray-700">{diagram.useCase}</p>
+                                  </div>
+                                </div>
+
+                                <div className="mb-4">
+                                  <h6 className="font-semibold text-gray-800 mb-2">🧩 構成要素</h6>
+                                  <div className="flex flex-wrap gap-2">
+                                    {diagram.elements.map((element: string, j: number) => (
+                                      <span key={j} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                        {element}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="mb-4">
+                                  <h6 className="font-semibold text-gray-800 mb-2">💡 例</h6>
+                                  <div className="bg-gray-100 rounded p-3 font-mono text-sm text-gray-800">
+                                    {diagram.example}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h6 className="font-semibold text-gray-800 mb-2">🎨 記法</h6>
+                                  <div className="grid gap-2">
+                                    {Object.entries(diagram.notation).map(([key, value]: [string, any], j: number) => (
+                                      <div key={j} className="flex items-center justify-between bg-gray-50 rounded p-2">
+                                        <span className="text-sm font-medium text-gray-700 capitalize">{key}</span>
+                                        <span className="text-xs text-gray-600">{value}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* UML図比較表 */}
+                      {'diagramComparison' in concept && (
+                        <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg p-5">
+                          <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <span className="mr-3">📊</span>
+                            主要UML図の比較表
+                          </h4>
+                          
+                          <div className="overflow-x-auto">
+                            <table className="w-full bg-white rounded-lg shadow">
+                              <thead>
+                                <tr className="bg-gray-50">
+                                  <th className="text-left p-3 font-semibold text-gray-800">比較項目</th>
+                                  <th className="text-center p-3 font-semibold text-blue-800">クラス図</th>
+                                  <th className="text-center p-3 font-semibold text-green-800">ユースケース図</th>
+                                  <th className="text-center p-3 font-semibold text-purple-800">アクティビティ図</th>
+                                  <th className="text-center p-3 font-semibold text-red-800">状態遷移図</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {concept.diagramComparison.map((comparison: any, i: number) => (
+                                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                    <td className="p-3 font-medium text-gray-800">{comparison.aspect}</td>
+                                    <td className="p-3 text-sm text-center text-blue-700">{comparison.class}</td>
+                                    <td className="p-3 text-sm text-center text-green-700">{comparison.usecase}</td>
+                                    <td className="p-3 text-sm text-center text-purple-700">{comparison.activity}</td>
+                                    <td className="p-3 text-sm text-center text-red-700">{comparison.state}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* 設計プロセスでの使い分け */}
+                          <div className="mt-6 grid md:grid-cols-2 gap-4">
+                            <div className="bg-white rounded-lg p-4">
+                              <h5 className="font-bold text-gray-800 mb-3 flex items-center">
+                                <span className="mr-2">🔄</span>
+                                設計プロセスでの順序
+                              </h5>
+                              <ol className="space-y-2 text-sm">
+                                <li className="flex items-center">
+                                  <span className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-3">1</span>
+                                  <span>ユースケース図（要件整理）</span>
+                                </li>
+                                <li className="flex items-center">
+                                  <span className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs mr-3">2</span>
+                                  <span>アクティビティ図（業務フロー）</span>
+                                </li>
+                                <li className="flex items-center">
+                                  <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-3">3</span>
+                                  <span>クラス図（システム構造）</span>
+                                </li>
+                                <li className="flex items-center">
+                                  <span className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs mr-3">4</span>
+                                  <span>状態遷移図（オブジェクト制御）</span>
+                                </li>
+                              </ol>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg p-4">
+                              <h5 className="font-bold text-gray-800 mb-3 flex items-center">
+                                <span className="mr-2">🎯</span>
+                                選択の指針
+                              </h5>
+                              <div className="space-y-3 text-sm">
+                                <div className="p-2 bg-green-50 rounded">
+                                  <strong className="text-green-800">機能を整理したい</strong>
+                                  <br />→ ユースケース図
+                                </div>
+                                <div className="p-2 bg-purple-50 rounded">
+                                  <strong className="text-purple-800">処理の流れを表現</strong>
+                                  <br />→ アクティビティ図
+                                </div>
+                                <div className="p-2 bg-blue-50 rounded">
+                                  <strong className="text-blue-800">システム構造を設計</strong>
+                                  <br />→ クラス図
+                                </div>
+                                <div className="p-2 bg-red-50 rounded">
+                                  <strong className="text-red-800">状態管理が重要</strong>
+                                  <br />→ 状態遷移図
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
