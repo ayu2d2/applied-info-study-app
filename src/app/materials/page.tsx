@@ -399,6 +399,189 @@ export default function StudyMaterialsPage() {
           addresses: ['通常のユニキャストアドレス', '複数箇所で同一IPを告知']
         }
       ]
+    },
+    'http-url-structure': {
+      title: 'HTTPとURL構造',
+      category: 'ネットワーク',
+      description: 'Webの基本プロトコルとURLの仕組み',
+      concepts: [
+        {
+          name: 'URL構造の詳細解析',
+          color: 'bg-blue-100',
+          icon: '🌐',
+          description: 'Uniform Resource Locator - Web上のリソースの位置を示すアドレス',
+          urlExample: 'https://www.example.com:8080/path/to/resource?param1=value1&param2=value2#section',
+          components: [
+            {
+              part: 'スキーム',
+              value: 'https',
+              description: 'プロトコルを指定（http, https, ftp, etc.）',
+              examples: ['http: 暗号化なし', 'https: SSL/TLS暗号化', 'ftp: ファイル転送', 'mailto: メール']
+            },
+            {
+              part: 'ホスト名',
+              value: 'www.example.com',
+              description: 'サーバーのドメイン名またはIPアドレス',
+              examples: ['ドメイン名: www.google.com', 'IPアドレス: 192.168.1.1', 'localhost: 127.0.0.1']
+            },
+            {
+              part: 'ポート番号',
+              value: '8080',
+              description: 'サービスを識別する番号（省略時はデフォルト）',
+              examples: ['HTTP: 80（省略可）', 'HTTPS: 443（省略可）', 'カスタム: 8080, 3000など']
+            },
+            {
+              part: 'パス',
+              value: '/path/to/resource',
+              description: 'サーバー内のリソースの場所',
+              examples: ['/index.html', '/api/users', '/images/photo.jpg', '/admin/dashboard']
+            },
+            {
+              part: 'クエリ文字列',
+              value: '?param1=value1&param2=value2',
+              description: 'サーバーに送信するパラメータ',
+              examples: ['検索: ?q=応用情報', 'ページ: ?page=2&limit=10', 'フィルタ: ?category=tech&sort=date']
+            },
+            {
+              part: 'フラグメント',
+              value: '#section',
+              description: 'ページ内の特定の位置を指定',
+              examples: ['見出し: #chapter1', 'アンカー: #top', 'セクション: #conclusion']
+            }
+          ]
+        },
+        {
+          name: 'HTTPメソッドとステータスコード',
+          color: 'bg-green-100',
+          icon: '🔄',
+          description: 'HTTPプロトコルの基本的な操作と応答',
+          methods: [
+            {
+              name: 'GET',
+              purpose: 'リソース取得',
+              description: 'サーバーからデータを取得する（読み取り専用）',
+              characteristics: ['冪等性あり', 'キャッシュ可能', 'URLに表示される', 'ブックマーク可能'],
+              examples: ['Webページ表示', 'API データ取得', '画像・CSS読み込み']
+            },
+            {
+              name: 'POST',
+              purpose: 'データ送信',
+              description: 'サーバーにデータを送信する（新規作成）',
+              characteristics: ['冪等性なし', 'キャッシュ不可', 'ボディに格納', 'セキュア'],
+              examples: ['フォーム送信', 'ファイルアップロード', 'ユーザー登録']
+            },
+            {
+              name: 'PUT',
+              purpose: 'リソース更新',
+              description: 'リソース全体を更新または新規作成',
+              characteristics: ['冪等性あり', 'リソース置換', '完全更新'],
+              examples: ['プロフィール更新', 'ファイル置換']
+            },
+            {
+              name: 'DELETE',
+              purpose: 'リソース削除',
+              description: '指定されたリソースを削除',
+              characteristics: ['冪等性あり', '削除操作', '不可逆'],
+              examples: ['アカウント削除', 'ファイル削除']
+            }
+          ],
+          statusCodes: [
+            { code: '200', meaning: 'OK', description: '正常に処理完了', category: '成功' },
+            { code: '201', meaning: 'Created', description: 'リソース新規作成成功', category: '成功' },
+            { code: '301', meaning: 'Moved Permanently', description: '恒久的なリダイレクト', category: 'リダイレクト' },
+            { code: '400', meaning: 'Bad Request', description: '不正なリクエスト', category: 'クライアントエラー' },
+            { code: '401', meaning: 'Unauthorized', description: '認証が必要', category: 'クライアントエラー' },
+            { code: '403', meaning: 'Forbidden', description: 'アクセス権限なし', category: 'クライアントエラー' },
+            { code: '404', meaning: 'Not Found', description: 'リソースが見つからない', category: 'クライアントエラー' },
+            { code: '500', meaning: 'Internal Server Error', description: 'サーバー内部エラー', category: 'サーバーエラー' },
+            { code: '503', meaning: 'Service Unavailable', description: 'サービス利用不可', category: 'サーバーエラー' }
+          ]
+        }
+      ]
+    },
+    'protocol-reference': {
+      title: '応用情報試験重要プロトコル一覧',
+      category: 'ネットワーク',
+      description: '試験によく出るプロトコルの完全リスト',
+      categories: [
+        {
+          name: 'Webプロトコル',
+          color: 'bg-blue-100',
+          icon: '🌐',
+          protocols: [
+            { name: 'HTTP', port: '80', description: 'Webページ転送プロトコル', encryption: '暗号化なし', usage: 'Webサイト閲覧' },
+            { name: 'HTTPS', port: '443', description: 'HTTP over SSL/TLS', encryption: 'SSL/TLS', usage: 'セキュアWeb通信' },
+            { name: 'WebSocket', port: '80/443', description: 'リアルタイム双方向通信', encryption: '対応', usage: 'チャット、ゲーム' },
+            { name: 'REST API', port: '80/443', description: 'RESTfulなWebサービス', encryption: 'HTTPS推奨', usage: 'API通信' }
+          ]
+        },
+        {
+          name: 'メールプロトコル',
+          color: 'bg-green-100',
+          icon: '📧',
+          protocols: [
+            { name: 'SMTP', port: '25/587/465', description: 'メール送信プロトコル', encryption: 'STARTTLS/SSL', usage: 'メール送信' },
+            { name: 'POP3', port: '110/995', description: 'メール受信（ダウンロード型）', encryption: 'SSL/TLS', usage: 'オフラインメール' },
+            { name: 'IMAP', port: '143/993', description: 'メール受信（サーバー保存型）', encryption: 'SSL/TLS', usage: 'マルチデバイス' },
+            { name: 'MIME', port: '-', description: 'マルチメディアメール拡張', encryption: '-', usage: '添付ファイル' }
+          ]
+        },
+        {
+          name: 'ファイル転送',
+          color: 'bg-yellow-100',
+          icon: '📁',
+          protocols: [
+            { name: 'FTP', port: '21', description: 'ファイル転送プロトコル', encryption: '平文', usage: 'ファイル送受信' },
+            { name: 'FTPS', port: '990', description: 'FTP over SSL/TLS', encryption: 'SSL/TLS', usage: 'セキュアファイル転送' },
+            { name: 'SFTP', port: '22', description: 'SSH File Transfer Protocol', encryption: 'SSH', usage: 'セキュアファイル転送' },
+            { name: 'TFTP', port: '69', description: 'Trivial FTP（簡易版）', encryption: 'なし', usage: 'ネットワーク機器設定' }
+          ]
+        },
+        {
+          name: 'リモートアクセス',
+          color: 'bg-purple-100',
+          icon: '🖥️',
+          protocols: [
+            { name: 'SSH', port: '22', description: 'セキュアシェル', encryption: '強力な暗号化', usage: 'リモート操作' },
+            { name: 'Telnet', port: '23', description: 'ターミナル接続（非推奨）', encryption: '平文', usage: 'レガシーシステム' },
+            { name: 'RDP', port: '3389', description: 'リモートデスクトップ', encryption: 'TLS', usage: 'Windows遠隔操作' },
+            { name: 'VNC', port: '5900+', description: 'Virtual Network Computing', encryption: 'オプション', usage: 'クロスプラットフォーム' }
+          ]
+        },
+        {
+          name: 'ネットワーク基盤',
+          color: 'bg-red-100',
+          icon: '🔗',
+          protocols: [
+            { name: 'DNS', port: '53', description: 'ドメイン名解決', encryption: 'DNS over HTTPS', usage: '名前解決' },
+            { name: 'DHCP', port: '67/68', description: 'IPアドレス自動割り当て', encryption: 'なし', usage: 'ネットワーク設定' },
+            { name: 'NTP', port: '123', description: '時刻同期プロトコル', encryption: 'なし', usage: 'システム時刻調整' },
+            { name: 'SNMP', port: '161/162', description: 'ネットワーク管理', encryption: 'SNMPv3', usage: '機器監視' }
+          ]
+        },
+        {
+          name: 'セキュリティ',
+          color: 'bg-orange-100',
+          icon: '🔒',
+          protocols: [
+            { name: 'SSL/TLS', port: '443', description: '暗号化通信プロトコル', encryption: '強力', usage: 'HTTPS、メール暗号化' },
+            { name: 'IPSec', port: '-', description: 'IP層セキュリティ', encryption: '強力', usage: 'VPN構築' },
+            { name: 'RADIUS', port: '1812/1813', description: '認証・承認・課金', encryption: 'あり', usage: 'ネットワーク認証' },
+            { name: 'Kerberos', port: '88', description: 'ネットワーク認証プロトコル', encryption: '強力', usage: 'Active Directory' }
+          ]
+        },
+        {
+          name: 'ルーティング',
+          color: 'bg-indigo-100',
+          icon: '🛣️',
+          protocols: [
+            { name: 'RIP', port: '-', description: 'ルーティング情報プロトコル', encryption: 'なし', usage: '小規模ネットワーク' },
+            { name: 'OSPF', port: '-', description: 'Open Shortest Path First', encryption: 'なし', usage: '企業内ルーティング' },
+            { name: 'BGP', port: '179', description: 'Border Gateway Protocol', encryption: 'TCP', usage: 'インターネット間接続' },
+            { name: 'EIGRP', port: '-', description: 'Enhanced IGRP（Cisco独自）', encryption: 'なし', usage: 'Ciscoネットワーク' }
+          ]
+        }
+      ]
     }
   };
   return (
@@ -904,6 +1087,168 @@ export default function StudyMaterialsPage() {
                                 ))}
                               </div>
                             </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* HTTPとURL構造 */}
+                  {selectedDiagram === 'http-url-structure' && (
+                    <div className="space-y-8">
+                      {conceptDiagrams['http-url-structure'].concepts.map((concept) => (
+                        <div key={concept.name} className={`${concept.color} rounded-lg p-6 border-2 border-gray-300 shadow-md`}>
+                          <div className="text-center mb-6">
+                            <div className="text-4xl mb-3">{concept.icon}</div>
+                            <h4 className="text-xl font-bold text-gray-800">{concept.name}</h4>
+                            <p className="text-gray-700 mt-2">{concept.description}</p>
+                          </div>
+                          
+                          {/* URL構造解析 */}
+                          {concept.name === 'URL構造の詳細解析' && (
+                            <div className="space-y-6">
+                              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+                                <h5 className="text-lg font-bold text-gray-800 mb-4">📋 URL分解例</h5>
+                                <div className="bg-white rounded p-4 mb-4">
+                                  <div className="text-sm font-mono break-all text-gray-800 mb-2">
+                                    {concept.urlExample}
+                                  </div>
+                                </div>
+                                
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  {concept.components?.map((component, i) => (
+                                    <div key={i} className="bg-white/80 rounded p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h6 className="text-md font-semibold text-gray-800">{component.part}</h6>
+                                        <span className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-mono">
+                                          {component.value}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-700 mb-3">{component.description}</p>
+                                      <div className="space-y-1">
+                                        {component.examples.map((example, j) => (
+                                          <div key={j} className="text-xs text-gray-600 bg-gray-100 rounded p-2">
+                                            • {example}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* HTTPメソッドとステータスコード */}
+                          {concept.name === 'HTTPメソッドとステータスコード' && (
+                            <div className="space-y-6">
+                              <div>
+                                <h5 className="text-lg font-bold text-gray-800 mb-4">🔄 HTTPメソッド</h5>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  {concept.methods?.map((method, i) => (
+                                    <div key={i} className="bg-white/80 rounded p-4">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h6 className="text-md font-bold text-gray-800">{method.name}</h6>
+                                        <span className="px-3 py-1 bg-green-500 text-white rounded text-xs">
+                                          {method.purpose}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-700 mb-3">{method.description}</p>
+                                      
+                                      <div className="space-y-2">
+                                        <div>
+                                          <div className="text-xs font-semibold text-gray-600 mb-1">特徴</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {method.characteristics.map((char, j) => (
+                                              <span key={j} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                                                {char}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        
+                                        <div>
+                                          <div className="text-xs font-semibold text-gray-600 mb-1">使用例</div>
+                                          <div className="space-y-1">
+                                            {method.examples.map((example, j) => (
+                                              <div key={j} className="text-xs text-gray-600">• {example}</div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h5 className="text-lg font-bold text-gray-800 mb-4">📊 HTTPステータスコード</h5>
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                  {concept.statusCodes?.map((status, i) => (
+                                    <div key={i} className="bg-white/80 rounded p-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-lg font-bold text-gray-800">{status.code}</span>
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                          status.category === '成功' ? 'bg-green-100 text-green-700' :
+                                          status.category === 'リダイレクト' ? 'bg-yellow-100 text-yellow-700' :
+                                          status.category === 'クライアントエラー' ? 'bg-red-100 text-red-700' :
+                                          'bg-purple-100 text-purple-700'
+                                        }`}>
+                                          {status.category}
+                                        </span>
+                                      </div>
+                                      <div className="text-sm font-semibold text-gray-800">{status.meaning}</div>
+                                      <div className="text-xs text-gray-600 mt-1">{status.description}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* プロトコル一覧 */}
+                  {selectedDiagram === 'protocol-reference' && (
+                    <div className="space-y-6">
+                      {conceptDiagrams['protocol-reference'].categories.map((category) => (
+                        <div key={category.name} className={`${category.color} rounded-lg p-6 border-2 border-gray-300 shadow-md`}>
+                          <div className="flex items-center mb-4">
+                            <div className="text-3xl mr-3">{category.icon}</div>
+                            <h4 className="text-xl font-bold text-gray-800">{category.name}</h4>
+                          </div>
+                          
+                          <div className="grid gap-4">
+                            {category.protocols.map((protocol, i) => (
+                              <div key={i} className="bg-white/80 rounded p-4 grid md:grid-cols-6 gap-3 items-center">
+                                <div className="md:col-span-1">
+                                  <div className="text-md font-bold text-gray-800">{protocol.name}</div>
+                                  <div className="text-sm text-blue-600 font-mono">{protocol.port}</div>
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                  <div className="text-sm text-gray-700">{protocol.description}</div>
+                                </div>
+                                
+                                <div className="md:col-span-1">
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                    protocol.encryption === 'なし' || protocol.encryption === '平文' 
+                                      ? 'bg-red-100 text-red-700' 
+                                      : protocol.encryption === '-' 
+                                      ? 'bg-gray-100 text-gray-700'
+                                      : 'bg-green-100 text-green-700'
+                                  }`}>
+                                    {protocol.encryption}
+                                  </span>
+                                </div>
+                                
+                                <div className="md:col-span-2">
+                                  <div className="text-xs text-gray-600">{protocol.usage}</div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
