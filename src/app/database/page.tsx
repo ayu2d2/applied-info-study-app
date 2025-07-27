@@ -1,398 +1,727 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 
-interface SQLQuery {
-  id: number;
-  name: string;
-  description: string;
-  query: string;
-  result: string[];
-}
-
-const sampleQueries: SQLQuery[] = [
-  {
-    id: 1,
-    name: 'SELECT文（基本）',
-    description: '全ての顧客データを取得',
-    query: 'SELECT * FROM customers;',
-    result: ['顧客ID: 1, 名前: 田中太郎, 年齢: 30', '顧客ID: 2, 名前: 佐藤花子, 年齢: 25']
-  },
-  {
-    id: 2,
-    name: 'SELECT文（列指定）',
-    description: '特定の列のみを取得',
-    query: 'SELECT name, age FROM customers;',
-    result: ['田中太郎, 30', '佐藤花子, 25', '鈴木一郎, 35']
-  },
-  {
-    id: 3,
-    name: 'WHERE句（条件指定）',
-    description: '年齢が30歳以上の顧客を取得',
-    query: 'SELECT * FROM customers WHERE age >= 30;',
-    result: ['顧客ID: 1, 名前: 田中太郎, 年齢: 30', '顧客ID: 3, 名前: 鈴木一郎, 年齢: 35']
-  },
-  {
-    id: 4,
-    name: 'ORDER BY句（並び替え）',
-    description: '年齢順でソート',
-    query: 'SELECT * FROM customers ORDER BY age DESC;',
-    result: ['鈴木一郎, 35', '田中太郎, 30', '佐藤花子, 25']
-  },
-  {
-    id: 5,
-    name: 'INSERT文（データ挿入）',
-    description: '新しい顧客データを挿入',
-    query: 'INSERT INTO customers (name, age) VALUES ("山田次郎", 28);',
-    result: ['1行が挿入されました']
-  },
-  {
-    id: 6,
-    name: 'UPDATE文（データ更新）',
-    description: '顧客の年齢を更新',
-    query: 'UPDATE customers SET age = 31 WHERE name = "田中太郎";',
-    result: ['1行が更新されました']
-  },
-  {
-    id: 7,
-    name: 'DELETE文（データ削除）',
-    description: '条件に合致するデータを削除',
-    query: 'DELETE FROM customers WHERE age < 25;',
-    result: ['該当する行が削除されました']
-  },
-  {
-    id: 8,
-    name: 'JOIN（内部結合）',
-    description: '2つのテーブルを結合',
-    query: 'SELECT c.name, o.product FROM customers c INNER JOIN orders o ON c.id = o.customer_id;',
-    result: ['田中太郎, ノートPC', '佐藤花子, スマートフォン']
-  },
-  {
-    id: 9,
-    name: 'GROUP BY（グループ化）',
-    description: '年代別に集計',
-    query: 'SELECT FLOOR(age/10)*10 as 年代, COUNT(*) as 人数 FROM customers GROUP BY FLOOR(age/10)*10;',
-    result: ['20代: 2人', '30代: 1人']
-  },
-  {
-    id: 10,
-    name: 'HAVING句（集計条件）',
-    description: 'グループ化後の条件指定',
-    query: 'SELECT age, COUNT(*) FROM customers GROUP BY age HAVING COUNT(*) > 1;',
-    result: ['30歳: 2人']
-  }
-];
-
-interface NormalizationStep {
-  id: number;
-  name: string;
-  description: string;
-  before: string[];
-  after: string[];
-}
-
-const normalizationSteps: NormalizationStep[] = [
-  {
-    id: 1,
-    name: '第1正規形（1NF）',
-    description: '繰り返し項目を排除し、原子的な値のみにする',
-    before: ['顧客ID | 名前 | 商品1,商品2,商品3'],
-    after: ['顧客ID | 名前', '顧客ID | 商品']
-  },
-  {
-    id: 2,
-    name: '第2正規形（2NF）',
-    description: '主キーではない項目に従属している項目を排除',
-    before: ['注文ID,商品ID | 商品名 | 単価 | 数量'],
-    after: ['注文ID,商品ID | 数量', '商品ID | 商品名 | 単価']
-  },
-  {
-    id: 3,
-    name: '第3正規形（3NF）',
-    description: '推移関数従属を排除',
-    before: ['社員ID | 部署ID | 部署名'],
-    after: ['社員ID | 部署ID', '部署ID | 部署名']
-  }
-];
-
 export default function DatabasePage() {
-  const [selectedQuery, setSelectedQuery] = useState<SQLQuery | null>(null);
-  const [selectedNormalization, setSelectedNormalization] = useState<NormalizationStep | null>(null);
-  const [activeTab, setActiveTab] = useState<'sql' | 'normalization' | 'er' | 'concepts'>('concepts');
-  const [selectedConcept, setSelectedConcept] = useState<string>('acid');
+  // プロ級の状態管理
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedConcept, setSelectedConcept] = useState<string | null>(null);
+  const [activeQuery, setActiveQuery] = useState<string>('');
 
-  // データベース概念図解データ
-  const conceptDiagrams = {
-    acid: {
-      title: "ACID特性",
-      description: "トランザクションの信頼性を保証する4つの性質",
-      components: [
-        { id: 'A', label: 'Atomicity\n(原子性)', color: 'bg-red-100', description: 'トランザクションは全実行か全未実行' },
-        { id: 'C', label: 'Consistency\n(一貫性)', color: 'bg-blue-100', description: 'データの整合性を保つ' },
-        { id: 'I', label: 'Isolation\n(独立性)', color: 'bg-green-100', description: '複数のトランザクションが干渉しない' },
-        { id: 'D', label: 'Durability\n(永続性)', color: 'bg-yellow-100', description: '確定した変更は永続化される' }
+  // プロ級のカテゴリシステム
+  const categories = [
+    { id: 'all', name: '全て', icon: '🎯', color: 'from-gray-400 to-gray-600' },
+    { id: 'basics', name: 'SQL基礎', icon: '📋', color: 'from-blue-400 to-blue-600' },
+    { id: 'queries', name: 'クエリ実践', icon: '🔍', color: 'from-green-400 to-green-600' },
+    { id: 'design', name: 'DB設計', icon: '🏗️', color: 'from-purple-400 to-purple-600' },
+    { id: 'optimization', name: 'パフォーマンス', icon: '⚡', color: 'from-orange-400 to-orange-600' },
+    { id: 'transactions', name: 'トランザクション', icon: '🔄', color: 'from-red-400 to-red-600' }
+  ];
+
+  const learningLevels = [
+    { id: 'all', name: '全レベル', color: 'bg-gray-100' },
+    { id: 'beginner', name: '初級', color: 'bg-green-100' },
+    { id: 'intermediate', name: '中級', color: 'bg-yellow-100' },
+    { id: 'advanced', name: '上級', color: 'bg-red-100' }
+  ];
+
+  // プロ級のデータベース学習コンテンツライブラリ
+  const databaseLibrary = {
+    'sql-fundamentals': {
+      title: 'SQL基礎文法マスター',
+      category: 'basics',
+      level: 'beginner',
+      description: 'SELECT文からJOINまで完全攻略',
+      keywords: ['SELECT', 'WHERE', 'JOIN', 'GROUP BY'],
+      estimatedTime: '25分',
+      difficulty: 2,
+      concepts: [
+        {
+          name: 'SELECT文の基本構文',
+          icon: '📝',
+          color: 'bg-blue-100',
+          description: 'データ取得の基本クエリ',
+          interactive: true,
+          examples: [
+            {
+              query: 'SELECT * FROM customers;',
+              description: '全顧客データを取得',
+              result: ['顧客ID: 1, 名前: 田中太郎, 年齢: 30', '顧客ID: 2, 名前: 佐藤花子, 年齢: 25'],
+              explanation: '「*」は全ての列を意味する'
+            },
+            {
+              query: 'SELECT name, age FROM customers;',
+              description: '特定の列のみを取得',
+              result: ['田中太郎, 30', '佐藤花子, 25', '鈴木一郎, 35'],
+              explanation: '必要な列だけを指定することで効率的'
+            }
+          ]
+        },
+        {
+          name: 'WHERE句とフィルタリング',
+          icon: '🔍',
+          color: 'bg-green-100',
+          description: '条件指定によるデータ絞り込み',
+          interactive: true,
+          operators: [
+            { symbol: '=', name: '等号', example: 'age = 30', description: '完全一致' },
+            { symbol: '!=', name: '不等号', example: 'age != 30', description: '値が異なる' },
+            { symbol: '>', name: '大なり', example: 'age > 30', description: '指定値より大きい' },
+            { symbol: 'LIKE', name: '部分一致', example: "name LIKE '田%'", description: 'パターンマッチング' },
+            { symbol: 'IN', name: '複数値', example: 'age IN (25, 30)', description: 'リスト内の値' },
+            { symbol: 'BETWEEN', name: '範囲指定', example: 'age BETWEEN 20 AND 40', description: '範囲内の値' }
+          ]
+        }
       ]
     },
-    cap: {
-      title: "CAP定理",
-      description: "分散システムで同時に満たせるのは最大2つまで",
-      components: [
-        { id: 'C', label: 'Consistency\n(一貫性)', color: 'bg-purple-100', description: '全ノードで同じデータを保持' },
-        { id: 'A', label: 'Availability\n(可用性)', color: 'bg-orange-100', description: 'システムが常に応答可能' },
-        { id: 'P', label: 'Partition tolerance\n(分断耐性)', color: 'bg-teal-100', description: 'ネットワーク障害に耐える' }
+    'advanced-queries': {
+      title: '高度なクエリテクニック',
+      category: 'queries',
+      level: 'intermediate',
+      description: 'JOIN、サブクエリ、ウィンドウ関数まで',
+      keywords: ['JOIN', 'サブクエリ', 'GROUP BY', 'HAVING'],
+      estimatedTime: '35分',
+      difficulty: 4,
+      joinTypes: [
+        {
+          name: 'INNER JOIN',
+          icon: '🔗',
+          color: 'bg-blue-100',
+          description: '両テーブルに存在するデータのみ',
+          syntax: 'SELECT * FROM A INNER JOIN B ON A.id = B.id',
+          usecase: '確実に関連するデータが存在する場合',
+          diagram: '⚪ ⚪ (共通部分のみ)'
+        },
+        {
+          name: 'LEFT JOIN',
+          icon: '🔗',
+          color: 'bg-green-100',
+          description: '左テーブルの全データ + 右テーブルのマッチするデータ',
+          syntax: 'SELECT * FROM A LEFT JOIN B ON A.id = B.id',
+          usecase: 'メインデータを全て取得しつつ関連データも欲しい',
+          diagram: '⚪ ⚫ (左テーブル優先)'
+        },
+        {
+          name: 'RIGHT JOIN',
+          icon: '🔗',
+          color: 'bg-yellow-100',
+          description: '右テーブルの全データ + 左テーブルのマッチするデータ',
+          syntax: 'SELECT * FROM A RIGHT JOIN B ON A.id = B.id',
+          usecase: 'RIGHT側のテーブルを基準にしたい場合',
+          diagram: '⚫ ⚪ (右テーブル優先)'
+        },
+        {
+          name: 'FULL OUTER JOIN',
+          icon: '🔗',
+          color: 'bg-purple-100',
+          description: '両テーブルの全データ',
+          syntax: 'SELECT * FROM A FULL OUTER JOIN B ON A.id = B.id',
+          usecase: '全てのデータを取得したい場合',
+          diagram: '⚪ ⚪ (全てのデータ)'
+        }
       ]
     },
-    normalization: {
-      title: "正規化の過程",
-      description: "データの冗長性を排除し、整合性を保つプロセス",
-      steps: [
-        { step: '第1正規形', description: '繰り返し項目を排除', color: 'bg-red-50', detail: '原子値のみ格納' },
-        { step: '第2正規形', description: '主キーへの完全関数従属', color: 'bg-orange-50', detail: '部分関数従属を排除' },
-        { step: '第3正規形', description: '推移関数従属を排除', color: 'bg-yellow-50', detail: '非主属性間の従属関係を排除' },
-        { step: 'BCNF', description: '全ての決定子が候補キー', color: 'bg-green-50', detail: '最も厳密な正規形' }
+    'database-design': {
+      title: 'データベース設計の原則',
+      category: 'design',
+      level: 'intermediate',
+      description: 'ER図、正規化、インデックス設計',
+      keywords: ['ER図', '正規化', 'インデックス', 'リレーション'],
+      estimatedTime: '40分',
+      difficulty: 3,
+      designPrinciples: [
+        {
+          name: '第1正規形（1NF）',
+          icon: '1️⃣',
+          color: 'bg-indigo-100',
+          rule: '繰り返し項目の排除',
+          before: '顧客テーブル：[ID, 名前, 電話番号1, 電話番号2, 電話番号3]',
+          after: '顧客テーブル：[ID, 名前] + 電話番号テーブル：[顧客ID, 電話番号]',
+          benefit: 'データの重複を防ぎ、追加・削除が容易になる'
+        },
+        {
+          name: '第2正規形（2NF）',
+          icon: '2️⃣',
+          color: 'bg-cyan-100',
+          rule: '部分関数従属の排除',
+          before: '注文明細：[注文ID, 商品ID, 商品名, 価格, 数量]',
+          after: '注文明細：[注文ID, 商品ID, 数量] + 商品：[商品ID, 商品名, 価格]',
+          benefit: '商品情報の重複を防ぎ、整合性を保つ'
+        },
+        {
+          name: '第3正規形（3NF）',
+          icon: '3️⃣',
+          color: 'bg-pink-100',
+          rule: '推移関数従属の排除',
+          before: '顧客：[ID, 名前, 郵便番号, 都道府県, 市区町村]',
+          after: '顧客：[ID, 名前, 郵便番号] + 住所：[郵便番号, 都道府県, 市区町村]',
+          benefit: '間接的な依存関係を解消し、データ整合性を向上'
+        }
       ]
     },
-    transaction: {
-      title: "トランザクション処理",
-      description: "データベース操作の一貫性を保つ仕組み",
-      flow: [
-        { step: 'BEGIN', description: 'トランザクション開始', color: 'bg-blue-100', detail: '作業領域確保' },
-        { step: 'DML操作', description: 'INSERT/UPDATE/DELETE', color: 'bg-yellow-100', detail: 'データ操作実行' },
-        { step: '検証', description: '制約チェック', color: 'bg-orange-100', detail: 'ACID特性の確認' },
-        { step: 'COMMIT/ROLLBACK', description: '確定または取消', color: 'bg-green-100', detail: '最終的な処理決定' }
+    'performance-tuning': {
+      title: 'パフォーマンスチューニング',
+      category: 'optimization',
+      level: 'advanced',
+      description: 'インデックス戦略と実行計画の最適化',
+      keywords: ['インデックス', '実行計画', 'パーティション', 'キャッシュ'],
+      estimatedTime: '30分',
+      difficulty: 5,
+      optimizationTechniques: [
+        {
+          name: 'インデックス設計',
+          icon: '📊',
+          color: 'bg-emerald-100',
+          types: [
+            { type: 'PRIMARY KEY', usage: 'テーブルの主キー', performance: '最高', note: '自動的にクラスタインデックス' },
+            { type: 'UNIQUE INDEX', usage: '一意制約付き高速検索', performance: '高', note: '重複値を許さない' },
+            { type: 'COMPOSITE INDEX', usage: '複数列での検索', performance: '高', note: '列の順序が重要' },
+            { type: 'PARTIAL INDEX', usage: '条件付きインデックス', performance: '中', note: 'ストレージ効率が良い' }
+          ]
+        },
+        {
+          name: 'クエリ最適化',
+          icon: '⚡',
+          color: 'bg-amber-100',
+          strategies: [
+            { strategy: 'SELECT文の最適化', method: '必要な列のみ指定', impact: 'I/O削減', example: 'SELECT name, age (× SELECT *)' },
+            { strategy: 'WHERE句の最適化', method: 'インデックス列を先頭に', impact: 'スキャン削減', example: 'WHERE indexed_col = ? AND other_col = ?' },
+            { strategy: 'JOINの最適化', method: '適切な結合順序', impact: '中間結果削減', example: '小さなテーブルから結合' },
+            { strategy: 'サブクエリ回避', method: 'JOINへの書き換え', impact: '実行効率向上', example: 'EXISTS → INNER JOIN' }
+          ]
+        }
       ]
     },
-    er: {
-      title: "ER図の構成要素",
-      description: "エンティティとリレーションシップを視覚化",
-      elements: [
-        { type: 'entity', label: 'エンティティ', shape: '長方形', color: 'bg-blue-100', description: '実体（テーブル）を表現' },
-        { type: 'attribute', label: '属性', shape: '楕円', color: 'bg-green-100', description: 'エンティティの特性' },
-        { type: 'relationship', label: 'リレーションシップ', shape: 'ひし形', color: 'bg-yellow-100', description: 'エンティティ間の関係' },
-        { type: 'key', label: '主キー', shape: '下線', color: 'bg-red-100', description: '一意識別子' }
+    'transaction-management': {
+      title: 'トランザクション管理',
+      category: 'transactions',
+      level: 'advanced',
+      description: 'ACID特性と分離レベルの実践的理解',
+      keywords: ['ACID', '分離レベル', 'ロック', 'デッドロック'],
+      estimatedTime: '35分',
+      difficulty: 4,
+      acidProperties: [
+        {
+          property: 'Atomicity（原子性）',
+          icon: '⚛️',
+          color: 'bg-red-100',
+          definition: 'トランザクションは全て実行されるか、全て実行されないか',
+          example: '銀行振込：引き出しと入金は両方成功するか、両方失敗する',
+          implementation: 'BEGIN、COMMIT、ROLLBACK文で制御',
+          failure: 'エラー発生時は自動的にROLLBACK'
+        },
+        {
+          property: 'Consistency（一貫性）',
+          icon: '⚖️',
+          color: 'bg-blue-100',
+          definition: 'トランザクション前後でデータの整合性が保たれる',
+          example: '在庫管理：商品販売時は在庫数と売上が正しく更新される',
+          implementation: '制約条件（CHECK、FOREIGN KEY）で保証',
+          failure: '制約違反時はトランザクション失敗'
+        },
+        {
+          property: 'Isolation（分離性）',
+          icon: '🔒',
+          color: 'bg-green-100',
+          definition: '同時実行されるトランザクションが互いに影響しない',
+          example: '複数ユーザーが同時にデータ更新しても干渉しない',
+          implementation: 'ロック機構と分離レベル設定',
+          failure: 'ダーティリードや幻読みの発生'
+        },
+        {
+          property: 'Durability（永続性）',
+          icon: '💾',
+          color: 'bg-purple-100',
+          definition: 'コミット後のデータは永続的に保存される',
+          example: 'システム障害後もコミット済みデータは残る',
+          implementation: 'ログファイルとチェックポイント',
+          failure: 'ディスク障害時のデータ消失'
+        }
       ]
     },
-    lock: {
-      title: "ロック機構",
-      description: "同時実行制御によるデータ整合性の保持",
-      types: [
-        { type: '共有ロック', description: '読み取り専用', color: 'bg-blue-100', detail: '複数同時取得可能' },
-        { type: '排他ロック', description: '読み書き専用', color: 'bg-red-100', detail: '1つのみ取得可能' },
-        { type: '意図ロック', description: '階層ロック制御', color: 'bg-yellow-100', detail: 'デッドロック防止' },
-        { type: 'デッドロック', description: '相互待機状態', color: 'bg-gray-100', detail: '自動検出・解除' }
+    'nosql-concepts': {
+      title: 'NoSQLデータベース入門',
+      category: 'design',
+      level: 'intermediate',
+      description: 'MongoDB、Redis、Cassandraの特徴と使い分け',
+      keywords: ['MongoDB', 'Redis', 'Cassandra', 'ドキュメント'],
+      estimatedTime: '30分',
+      difficulty: 3,
+      nosqlTypes: [
+        {
+          type: 'ドキュメント指向',
+          icon: '📄',
+          color: 'bg-orange-100',
+          database: 'MongoDB',
+          structure: 'JSON形式のドキュメント',
+          usecase: 'Webアプリケーション、CMS、カタログ',
+          pros: ['柔軟なスキーマ', '直感的なデータ構造', '水平スケーリング'],
+          cons: ['結合が複雑', 'ACID制約が弱い', 'ディスク使用量大']
+        },
+        {
+          type: 'キー・バリュー',
+          icon: '🔑',
+          color: 'bg-teal-100',
+          database: 'Redis',
+          structure: 'キーと値のペア',
+          usecase: 'キャッシュ、セッション管理、リアルタイム分析',
+          pros: ['高速アクセス', 'シンプル構造', 'メモリベース'],
+          cons: ['複雑なクエリ不可', 'メモリ制約', '結合処理なし']
+        },
+        {
+          type: '列指向',
+          icon: '📊',
+          color: 'bg-violet-100',
+          database: 'Cassandra',
+          structure: '列ファミリー',
+          usecase: 'ビッグデータ、IoT、時系列データ',
+          pros: ['高い可用性', '線形スケーリング', '書き込み最適化'],
+          cons: ['結合不可', '複雑な設定', '学習コスト高']
+        }
       ]
     }
   };
 
+  // 検索とフィルタリング機能
+  const filteredConcepts = useMemo(() => {
+    return Object.entries(databaseLibrary).filter(([key, concept]) => {
+      const categoryMatch = selectedCategory === 'all' || concept.category === selectedCategory;
+      const levelMatch = selectedLevel === 'all' || concept.level === selectedLevel;
+      const searchMatch = searchQuery === '' || 
+        concept.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        concept.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        concept.keywords?.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()));
+      return categoryMatch && levelMatch && searchMatch;
+    });
+  }, [selectedCategory, selectedLevel, searchQuery]);
+
+  // 難易度表示
+  const DifficultyStars = ({ difficulty }: { difficulty: number }) => (
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={`text-sm ${star <= difficulty ? 'text-yellow-400' : 'text-gray-300'}`}>
+          ⭐
+        </span>
+      ))}
+    </div>
+  );
+
   return (
-    <AppLayout 
-      title="データベース設計・操作"
-      description="SQL、正規化、ERモデルなどのデータベース技術を実践的に学習"
-    >
-      <div className="space-y-8">
-        
-        {/* タブナビゲーション */}
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('concepts')}
-              className={`pb-2 px-4 font-medium ${
-                activeTab === 'concepts'
-                  ? 'border-b-2 border-purple-500 text-purple-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              概念図解
-            </button>
-            <button
-              onClick={() => setActiveTab('sql')}
-              className={`pb-2 px-4 font-medium ${
-                activeTab === 'sql'
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              SQL実習
-            </button>
-            <button
-              onClick={() => setActiveTab('normalization')}
-              className={`pb-2 px-4 font-medium ${
-                activeTab === 'normalization'
-                  ? 'border-b-2 border-green-500 text-green-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              正規化
-            </button>
-            <button
-              onClick={() => setActiveTab('er')}
-              className={`pb-2 px-4 font-medium ${
-                activeTab === 'er'
-                  ? 'border-b-2 border-orange-500 text-orange-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              ERモデル
-            </button>
-          </nav>
+    <AppLayout>
+      <div className="max-w-6xl mx-auto">
+        {/* プロ級のヘッダーセクション */}
+        <div className="bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-700 rounded-2xl text-white p-8 shadow-2xl mb-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+              🗃️ データベースマスタープログラム
+            </h1>
+            <p className="text-xl opacity-90 mb-6">
+              SQL基礎からNoSQL、パフォーマンスチューニングまで完全攻略
+            </p>
+            <div className="flex justify-center items-center space-x-6 text-sm opacity-80">
+              <div className="flex items-center space-x-2">
+                <span>📊</span>
+                <span>{Object.keys(databaseLibrary).length}の学習モジュール</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span>💻</span>
+                <span>実践的SQLクエリ</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span>🎯</span>
+                <span>試験対策完全対応</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 概念図解タブ */}
-        {activeTab === 'concepts' && (
+        {/* プロ級の検索・フィルターセクション */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">データベース概念の視覚的理解</h2>
-              <p className="text-gray-600 mb-6">
-                複雑なデータベースの概念を図解で分かりやすく学習しましょう
-              </p>
-              
-              {/* 概念選択 */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {Object.keys(conceptDiagrams).map((key) => (
+            {/* 検索バー */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-400 text-xl">🔍</span>
+              </div>
+              <input
+                type="text"
+                placeholder="キーワードで検索（例：SELECT、JOIN、正規化）"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="block w-full pl-12 pr-4 py-3 text-lg rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+              />
+            </div>
+
+            {/* カテゴリフィルター */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">📂 カテゴリ</h3>
+              <div className="flex flex-wrap gap-3">
+                {categories.map((category) => (
                   <button
-                    key={key}
-                    onClick={() => setSelectedConcept(key)}
-                    className={`px-4 py-2 rounded-lg font-medium ${
-                      selectedConcept === key
-                        ? 'bg-purple-100 text-purple-800 border-2 border-purple-300'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
+                      selectedCategory === category.id
+                        ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
-                    {conceptDiagrams[key as keyof typeof conceptDiagrams].title}
+                    <span className="mr-2">{category.icon}</span>
+                    {category.name}
                   </button>
                 ))}
               </div>
+            </div>
 
-              {/* 選択された概念の図解 */}
-              {selectedConcept && (
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    {conceptDiagrams[selectedConcept as keyof typeof conceptDiagrams].title}
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    {conceptDiagrams[selectedConcept as keyof typeof conceptDiagrams].description}
-                  </p>
+            {/* 学習レベルフィルター */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">📊 学習レベル</h3>
+              <div className="flex flex-wrap gap-3">
+                {learningLevels.map((level) => (
+                  <button
+                    key={level.id}
+                    onClick={() => setSelectedLevel(level.id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      selectedLevel === level.id
+                        ? `${level.color} border-2 border-current shadow-md`
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {level.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
-                  {/* ACID特性の図解 */}
-                  {selectedConcept === 'acid' && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {conceptDiagrams.acid.components.map((component) => (
-                        <div key={component.id} className={`${component.color} rounded-lg p-4 border-2 border-gray-300`}>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-gray-800 mb-2">{component.id}</div>
-                            <div className="text-sm font-medium text-gray-700 whitespace-pre-line mb-2">
-                              {component.label}
+        {/* プロ級のコンセプトカードグリッド */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+          {filteredConcepts.map(([key, concept]) => (
+            <div
+              key={key}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden cursor-pointer"
+              onClick={() => setSelectedConcept(selectedConcept === key ? null : key)}
+            >
+              {/* カードヘッダー */}
+              <div className={`bg-gradient-to-r ${categories.find(c => c.id === concept.category)?.color || 'from-gray-400 to-gray-600'} p-4 text-white`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-2">{concept.title}</h3>
+                    <p className="text-sm opacity-90">{concept.description}</p>
+                  </div>
+                  <span className="text-3xl ml-3">
+                    {categories.find(c => c.id === concept.category)?.icon}
+                  </span>
+                </div>
+              </div>
+
+              {/* カードボディ */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      concept.level === 'beginner' ? 'bg-green-100 text-green-800' :
+                      concept.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {concept.level === 'beginner' ? '初級' : 
+                       concept.level === 'intermediate' ? '中級' : '上級'}
+                    </span>
+                    <span className="text-xs text-gray-500">⏱️ {concept.estimatedTime}</span>
+                  </div>
+                  <DifficultyStars difficulty={concept.difficulty} />
+                </div>
+
+                {/* キーワードタグ */}
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {concept.keywords.slice(0, 4).map((keyword) => (
+                    <span key={keyword} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      {keyword}
+                    </span>
+                  ))}
+                  {concept.keywords.length > 4 && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                      +{concept.keywords.length - 4}
+                    </span>
+                  )}
+                </div>
+
+                {/* 展開アイコン */}
+                <div className="flex justify-center">
+                  <span className={`text-2xl transition-transform duration-200 ${
+                    selectedConcept === key ? 'rotate-180' : ''
+                  }`}>
+                    ⌄
+                  </span>
+                </div>
+              </div>
+
+              {/* 展開コンテンツ */}
+              {selectedConcept === key && (
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
+                  {/* SQL基礎詳細表示 */}
+                  {key === 'sql-fundamentals' && 'concepts' in concept && (
+                    <div className="space-y-6">
+                      {concept.concepts.map((sqlConcept: any, index: number) => (
+                        <div key={index} className={`${sqlConcept.color} rounded-lg p-4`}>
+                          <div className="flex items-center mb-3">
+                            <span className="text-2xl mr-3">{sqlConcept.icon}</span>
+                            <h4 className="text-lg font-bold text-gray-800">{sqlConcept.name}</h4>
+                          </div>
+                          <p className="text-gray-700 mb-4">{sqlConcept.description}</p>
+                          
+                          {sqlConcept.examples && (
+                            <div className="space-y-3">
+                              {sqlConcept.examples.map((example: any, i: number) => (
+                                <div key={i} className="bg-white/70 rounded p-3">
+                                  <div className="font-mono text-sm bg-gray-800 text-green-400 p-2 rounded mb-2">
+                                    {example.query}
+                                  </div>
+                                  <div className="text-sm text-gray-700 mb-2">{example.description}</div>
+                                  <div className="text-xs text-blue-600 mb-2">{example.explanation}</div>
+                                  <div className="space-y-1">
+                                    {example.result.map((result: string, j: number) => (
+                                      <div key={j} className="text-xs text-gray-600 bg-gray-100 p-1 rounded">
+                                        {result}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                            <div className="text-xs text-gray-600">{component.description}</div>
+                          )}
+
+                          {sqlConcept.operators && (
+                            <div className="grid md:grid-cols-2 gap-3">
+                              {sqlConcept.operators.map((op: any, i: number) => (
+                                <div key={i} className="bg-white/70 rounded p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="font-bold text-gray-800">{op.symbol}</span>
+                                    <span className="text-sm text-gray-600">{op.name}</span>
+                                  </div>
+                                  <div className="font-mono text-xs bg-gray-100 p-1 rounded mb-1">
+                                    {op.example}
+                                  </div>
+                                  <div className="text-xs text-gray-600">{op.description}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 高度なクエリ詳細表示 */}
+                  {key === 'advanced-queries' && 'joinTypes' in concept && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-bold text-gray-800 mb-4">JOIN の種類と使い分け</h4>
+                      {concept.joinTypes.map((join: any, index: number) => (
+                        <div key={index} className={`${join.color} rounded-lg p-4`}>
+                          <div className="flex items-center mb-3">
+                            <span className="text-2xl mr-3">{join.icon}</span>
+                            <h5 className="text-lg font-bold text-gray-800">{join.name}</h5>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="text-sm text-gray-700">{join.description}</div>
+                            <div className="font-mono text-xs bg-gray-800 text-green-400 p-2 rounded">
+                              {join.syntax}
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-semibold text-gray-800">使用場面：</span>
+                              <span className="text-gray-700">{join.usecase}</span>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-semibold text-gray-800">図解：</span>
+                              <span className="text-lg">{join.diagram}</span>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* CAP定理の図解 */}
-                  {selectedConcept === 'cap' && (
-                    <div className="relative">
-                      <div className="flex justify-center items-center h-64">
-                        <div className="relative w-64 h-64">
-                          {/* 三角形の各頂点 */}
-                          {conceptDiagrams.cap.components.map((component, index) => {
-                            const positions = [
-                              { top: '0', left: '50%', transform: 'translateX(-50%)' },
-                              { bottom: '0', left: '0' },
-                              { bottom: '0', right: '0' }
-                            ];
-                            return (
-                              <div
-                                key={component.id}
-                                className={`absolute ${component.color} rounded-lg p-3 border-2 border-gray-300`}
-                                style={positions[index]}
-                              >
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-gray-800">{component.id}</div>
-                                  <div className="text-sm font-medium text-gray-700 whitespace-pre-line">
-                                    {component.label}
-                                  </div>
-                                  <div className="text-xs text-gray-600 mt-1">{component.description}</div>
+                  {/* データベース設計詳細表示 */}
+                  {key === 'database-design' && 'designPrinciples' in concept && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-bold text-gray-800 mb-4">正規化プロセス</h4>
+                      {concept.designPrinciples.map((principle: any, index: number) => (
+                        <div key={index} className={`${principle.color} rounded-lg p-4`}>
+                          <div className="flex items-center mb-3">
+                            <span className="text-2xl mr-3">{principle.icon}</span>
+                            <h5 className="text-lg font-bold text-gray-800">{principle.name}</h5>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="text-sm font-semibold text-gray-800">{principle.rule}</div>
+                            <div className="space-y-2">
+                              <div>
+                                <span className="text-xs font-semibold text-red-600">正規化前：</span>
+                                <div className="text-xs text-gray-700 bg-red-50 p-2 rounded">
+                                  {principle.before}
                                 </div>
                               </div>
-                            );
-                          })}
-                          {/* 中央のメッセージ */}
-                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-3 border-2 border-red-300 text-center">
-                            <div className="text-sm font-bold text-red-600">最大2つまで</div>
-                            <div className="text-xs text-red-500">同時選択可能</div>
+                              <div>
+                                <span className="text-xs font-semibold text-green-600">正規化後：</span>
+                                <div className="text-xs text-gray-700 bg-green-50 p-2 rounded">
+                                  {principle.after}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs text-blue-600 italic">
+                              <span className="font-semibold">効果：</span> {principle.benefit}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   )}
 
-                  {/* 正規化の図解 */}
-                  {selectedConcept === 'normalization' && (
-                    <div className="space-y-4">
-                      {conceptDiagrams.normalization.steps.map((step, index) => (
-                        <div key={index} className="flex items-center space-x-4">
-                          <div className={`${step.color} rounded-lg p-3 min-w-[120px] text-center border-2 border-gray-300`}>
-                            <div className="font-bold text-gray-800">{step.step}</div>
-                            <div className="text-xs text-gray-600 mt-1">{step.detail}</div>
+                  {/* パフォーマンスチューニング詳細表示 */}
+                  {key === 'performance-tuning' && 'optimizationTechniques' in concept && (
+                    <div className="space-y-6">
+                      {concept.optimizationTechniques.map((technique: any, index: number) => (
+                        <div key={index} className={`${technique.color} rounded-lg p-4`}>
+                          <div className="flex items-center mb-3">
+                            <span className="text-2xl mr-3">{technique.icon}</span>
+                            <h5 className="text-lg font-bold text-gray-800">{technique.name}</h5>
                           </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800">{step.description}</div>
-                          </div>
-                          {index < conceptDiagrams.normalization.steps.length - 1 && (
-                            <div className="text-2xl text-gray-400">→</div>
+                          
+                          {technique.types && (
+                            <div className="overflow-x-auto">
+                              <table className="w-full bg-white/70 rounded">
+                                <thead>
+                                  <tr className="border-b">
+                                    <th className="text-left p-2">種類</th>
+                                    <th className="text-left p-2">用途</th>
+                                    <th className="text-left p-2">性能</th>
+                                    <th className="text-left p-2">備考</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {technique.types.map((type: any, i: number) => (
+                                    <tr key={i} className="border-b">
+                                      <td className="p-2 font-semibold">{type.type}</td>
+                                      <td className="p-2 text-sm">{type.usage}</td>
+                                      <td className="p-2">
+                                        <span className={`px-2 py-1 rounded text-xs ${
+                                          type.performance === '最高' ? 'bg-green-100 text-green-800' :
+                                          type.performance === '高' ? 'bg-blue-100 text-blue-800' :
+                                          'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                          {type.performance}
+                                        </span>
+                                      </td>
+                                      <td className="p-2 text-xs text-gray-600">{type.note}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {technique.strategies && (
+                            <div className="grid md:grid-cols-2 gap-3">
+                              {technique.strategies.map((strategy: any, i: number) => (
+                                <div key={i} className="bg-white/70 rounded p-3">
+                                  <div className="font-semibold text-gray-800 mb-2">{strategy.strategy}</div>
+                                  <div className="text-sm text-gray-700 mb-1">
+                                    <span className="font-semibold">手法:</span> {strategy.method}
+                                  </div>
+                                  <div className="text-sm text-green-600 mb-1">
+                                    <span className="font-semibold">効果:</span> {strategy.impact}
+                                  </div>
+                                  <div className="font-mono text-xs bg-gray-100 p-1 rounded">
+                                    {strategy.example}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* トランザクション処理の図解 */}
-                  {selectedConcept === 'transaction' && (
+                  {/* トランザクション管理詳細表示 */}
+                  {key === 'transaction-management' && 'acidProperties' in concept && (
                     <div className="space-y-4">
-                      {conceptDiagrams.transaction.flow.map((step, index) => (
-                        <div key={index} className="flex items-center space-x-4">
-                          <div className={`${step.color} rounded-lg p-3 min-w-[120px] text-center border-2 border-gray-300`}>
-                            <div className="font-bold text-gray-800">{step.step}</div>
-                            <div className="text-xs text-gray-600 mt-1">{step.detail}</div>
+                      <h4 className="text-lg font-bold text-gray-800 mb-4">ACID特性の詳細解説</h4>
+                      {concept.acidProperties.map((property: any, index: number) => (
+                        <div key={index} className={`${property.color} rounded-lg p-4`}>
+                          <div className="flex items-center mb-3">
+                            <span className="text-2xl mr-3">{property.icon}</span>
+                            <h5 className="text-lg font-bold text-gray-800">{property.property}</h5>
                           </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800">{step.description}</div>
-                          </div>
-                          {index < conceptDiagrams.transaction.flow.length - 1 && (
-                            <div className="text-2xl text-gray-400">↓</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* ER図要素の図解 */}
-                  {selectedConcept === 'er' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {conceptDiagrams.er.elements.map((element) => (
-                        <div key={element.type} className={`${element.color} rounded-lg p-4 border-2 border-gray-300`}>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-gray-800 mb-1">{element.label}</div>
-                            <div className="text-sm text-gray-600 mb-2">形状: {element.shape}</div>
-                            <div className="text-xs text-gray-600">{element.description}</div>
+                          <div className="space-y-3">
+                            <div className="text-sm text-gray-700">{property.definition}</div>
+                            <div className="bg-white/70 rounded p-3">
+                              <div className="text-sm font-semibold text-gray-800 mb-1">実例</div>
+                              <div className="text-sm text-gray-700">{property.example}</div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div className="bg-white/70 rounded p-3">
+                                <div className="text-sm font-semibold text-green-600 mb-1">実装方法</div>
+                                <div className="text-xs text-gray-700">{property.implementation}</div>
+                              </div>
+                              <div className="bg-white/70 rounded p-3">
+                                <div className="text-sm font-semibold text-red-600 mb-1">失敗例</div>
+                                <div className="text-xs text-gray-700">{property.failure}</div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* ロック機構の図解 */}
-                  {selectedConcept === 'lock' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {conceptDiagrams.lock.types.map((lockType) => (
-                        <div key={lockType.type} className={`${lockType.color} rounded-lg p-4 border-2 border-gray-300`}>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-gray-800 mb-1">{lockType.type}</div>
-                            <div className="text-sm text-gray-700 mb-2">{lockType.description}</div>
-                            <div className="text-xs text-gray-600">{lockType.detail}</div>
+                  {/* NoSQL概念詳細表示 */}
+                  {key === 'nosql-concepts' && 'nosqlTypes' in concept && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-bold text-gray-800 mb-4">NoSQLデータベースの種類</h4>
+                      {concept.nosqlTypes.map((nosql: any, index: number) => (
+                        <div key={index} className={`${nosql.color} rounded-lg p-4`}>
+                          <div className="flex items-center mb-3">
+                            <span className="text-2xl mr-3">{nosql.icon}</span>
+                            <div>
+                              <h5 className="text-lg font-bold text-gray-800">{nosql.type}</h5>
+                              <div className="text-sm text-gray-600">代表例: {nosql.database}</div>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <span className="text-sm font-semibold text-gray-800">データ構造:</span>
+                              <span className="text-sm text-gray-700 ml-2">{nosql.structure}</span>
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-gray-800">主な用途:</span>
+                              <span className="text-sm text-gray-700 ml-2">{nosql.usecase}</span>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div>
+                                <div className="text-sm font-semibold text-green-600 mb-2">メリット</div>
+                                <div className="space-y-1">
+                                  {nosql.pros.map((pro: string, i: number) => (
+                                    <div key={i} className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
+                                      ✅ {pro}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-red-600 mb-2">デメリット</div>
+                                <div className="space-y-1">
+                                  {nosql.cons.map((con: string, i: number) => (
+                                    <div key={i} className="text-xs bg-red-50 text-red-800 px-2 py-1 rounded">
+                                      ❌ {con}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -401,206 +730,29 @@ export default function DatabasePage() {
                 </div>
               )}
             </div>
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* SQL実習タブ */}
-        {activeTab === 'sql' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* SQLクエリ一覧 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">SQL文サンプル</h2>
-              <div className="space-y-2">
-                {sampleQueries.map((query) => (
-                  <button
-                    key={query.id}
-                    onClick={() => setSelectedQuery(query)}
-                    className={`w-full text-left p-3 rounded-lg border ${
-                      selectedQuery?.id === query.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="font-medium text-gray-800">{query.name}</div>
-                    <div className="text-sm text-gray-600">{query.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 選択されたクエリの詳細 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">クエリ詳細</h2>
-              {selectedQuery ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium text-gray-800 mb-2">{selectedQuery.name}</h3>
-                    <p className="text-gray-600 mb-4">{selectedQuery.description}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">SQL文</h4>
-                    <div className="bg-gray-100 p-3 rounded-lg font-mono text-sm">
-                      {selectedQuery.query}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">実行結果</h4>
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      {selectedQuery.result.map((row, index) => (
-                        <div key={index} className="text-sm text-green-800">
-                          {row}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500">左側のSQL文を選択してください</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 正規化タブ */}
-        {activeTab === 'normalization' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 正規化ステップ一覧 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">正規化の段階</h2>
-              <div className="space-y-2">
-                {normalizationSteps.map((step) => (
-                  <button
-                    key={step.id}
-                    onClick={() => setSelectedNormalization(step)}
-                    className={`w-full text-left p-3 rounded-lg border ${
-                      selectedNormalization?.id === step.id
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="font-medium text-gray-800">{step.name}</div>
-                    <div className="text-sm text-gray-600">{step.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 選択された正規化の詳細 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">正規化詳細</h2>
-              {selectedNormalization ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium text-gray-800 mb-2">{selectedNormalization.name}</h3>
-                    <p className="text-gray-600 mb-4">{selectedNormalization.description}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">正規化前</h4>
-                    <div className="bg-red-50 p-3 rounded-lg">
-                      {selectedNormalization.before.map((table, index) => (
-                        <div key={index} className="text-sm text-red-800 font-mono">
-                          {table}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="text-center text-2xl text-gray-400">↓</div>
-                  
-                  <div>
-                    <h4 className="font-medium text-gray-800 mb-2">正規化後</h4>
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      {selectedNormalization.after.map((table, index) => (
-                        <div key={index} className="text-sm text-green-800 font-mono">
-                          {table}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500">左側の正規化段階を選択してください</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ERモデルタブ */}
-        {activeTab === 'er' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">ER図（Entity-Relationship図）</h2>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-blue-100 rounded-lg p-4 border-2 border-blue-300">
-                  <div className="text-center">
-                    <div className="w-20 h-12 bg-blue-200 border-2 border-blue-400 mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-xs font-bold">エンティティ</span>
-                    </div>
-                    <div className="text-sm text-blue-800">実体（テーブル）</div>
-                  </div>
-                </div>
-                
-                <div className="bg-green-100 rounded-lg p-4 border-2 border-green-300">
-                  <div className="text-center">
-                    <div className="w-20 h-12 bg-green-200 border-2 border-green-400 rounded-full mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-xs font-bold">属性</span>
-                    </div>
-                    <div className="text-sm text-green-800">エンティティの特性</div>
-                  </div>
-                </div>
-                
-                <div className="bg-yellow-100 rounded-lg p-4 border-2 border-yellow-300">
-                  <div className="text-center">
-                    <div className="w-20 h-12 bg-yellow-200 border-2 border-yellow-400 mx-auto mb-2 flex items-center justify-center transform rotate-45">
-                      <span className="text-xs font-bold transform -rotate-45">関係</span>
-                    </div>
-                    <div className="text-sm text-yellow-800">リレーションシップ</div>
-                  </div>
-                </div>
-                
-                <div className="bg-red-100 rounded-lg p-4 border-2 border-red-300">
-                  <div className="text-center">
-                    <div className="w-20 h-12 bg-red-200 border-2 border-red-400 rounded-full mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-xs font-bold underline">主キー</span>
-                    </div>
-                    <div className="text-sm text-red-800">一意識別子</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="font-bold text-gray-800 mb-4">簡単なER図の例：顧客と注文</h3>
-                <div className="flex items-center justify-center space-x-8">
-                  <div className="text-center">
-                    <div className="bg-blue-200 border-2 border-blue-400 p-4 rounded">
-                      <div className="font-bold underline">顧客ID</div>
-                      <div>顧客名</div>
-                      <div>電話番号</div>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">顧客エンティティ</div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="bg-yellow-200 border-2 border-yellow-400 p-3 transform rotate-45">
-                      <span className="transform -rotate-45 text-sm font-bold">注文する</span>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">リレーションシップ</div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="bg-blue-200 border-2 border-blue-400 p-4 rounded">
-                      <div className="font-bold underline">注文ID</div>
-                      <div>注文日</div>
-                      <div>金額</div>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">注文エンティティ</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* 結果が見つからない場合 */}
+        {filteredConcepts.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
+              検索結果が見つかりませんでした
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              検索条件を変更してお試しください
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+                setSelectedLevel('all');
+              }}
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              フィルターをリセット
+            </button>
           </div>
         )}
       </div>
