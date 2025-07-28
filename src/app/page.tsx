@@ -106,38 +106,22 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* 模擬試験 */}
-          <Link href="/exam" className="group">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 group-hover:scale-105 transform transition-transform">
-              <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                模擬試験
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                本番に近い形式で過去問題や予想問題に
-                挑戦して実力を確認できます。
-              </p>
-            </div>
-          </Link>
 
-          {/* 重要知識まとめ */}
-          <Link href="/materials" className="group">
+
+          {/* プロトコル図解 */}
+          <Link href="/protocols" className="group">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 group-hover:scale-105 transform transition-transform">
-              <div className="w-12 h-12 bg-teal-500 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-yellow-500 rounded-lg flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v18a1 1 0 01-1 1H4a1 1 0 01-1-1V1a1 1 0 011-1h2a1 1 0 011 1v3m10-4v2H7V0" />
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                重要知識まとめ
+                プロトコル図解
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                応用情報技術者試験によく出る重要公式や
-                頻出用語を整理して確認できます。
+                通信プロトコルの動作をアニメーションで
+                視覚的に理解できる学習ツールです。
               </p>
             </div>
           </Link>

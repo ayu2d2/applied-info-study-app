@@ -3,6 +3,240 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
+// 正規化アニメーションコンポーネント
+const NormalizationAnimation = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const normalizationSteps = [
+    {
+      title: '非正規化テーブル',
+      description: '重複データと複数値属性を含む状態',
+      data: [
+        { id: 1, name: '田中太郎', address: '東京都渋谷区1-1-1, 2F', phone: '03-1111-1111,090-1111-1111', department: '営業部', deptManager: '山田部長' },
+        { id: 2, name: '佐藤花子', address: '大阪府大阪市2-2-2, 3F', phone: '06-2222-2222', department: '技術部', deptManager: '鈴木部長' },
+        { id: 3, name: '鈴木一郎', address: '愛知県名古屋市3-3-3', phone: '052-3333-3333,090-3333-3333', department: '営業部', deptManager: '山田部長' }
+      ],
+      issues: ['住所に建物情報が混在', '電話番号が複数値', '部署情報の重複']
+    },
+    {
+      title: '第1正規形（1NF）',
+      description: '原子値に分解し、複数値属性を除去',
+      data: [
+        { id: 1, name: '田中太郎', prefecture: '東京都', city: '渋谷区', street: '1-1-1', building: '2F', phone: '03-1111-1111', department: '営業部', deptManager: '山田部長' },
+        { id: 1, name: '田中太郎', prefecture: '東京都', city: '渋谷区', street: '1-1-1', building: '2F', phone: '090-1111-1111', department: '営業部', deptManager: '山田部長' },
+        { id: 2, name: '佐藤花子', prefecture: '大阪府', city: '大阪市', street: '2-2-2', building: '3F', phone: '06-2222-2222', department: '技術部', deptManager: '鈴木部長' },
+        { id: 3, name: '鈴木一郎', prefecture: '愛知県', city: '名古屋市', street: '3-3-3', building: '', phone: '052-3333-3333', department: '営業部', deptManager: '山田部長' },
+        { id: 3, name: '鈴木一郎', prefecture: '愛知県', city: '名古屋市', street: '3-3-3', building: '', phone: '090-3333-3333', department: '営業部', deptManager: '山田部長' }
+      ],
+      improvements: ['住所を都道府県、市区町村、番地、建物に分割', '電話番号を1行1件に分割']
+    },
+    {
+      title: '第2正規形（2NF）',
+      description: '部分関数従属を除去し、テーブルを分割',
+      tables: {
+        employees: [
+          { emp_id: 1, name: '田中太郎', dept_id: 1 },
+          { emp_id: 2, name: '佐藤花子', dept_id: 2 },
+          { emp_id: 3, name: '鈴木一郎', dept_id: 1 }
+        ],
+        addresses: [
+          { emp_id: 1, prefecture: '東京都', city: '渋谷区', street: '1-1-1', building: '2F' },
+          { emp_id: 2, prefecture: '大阪府', city: '大阪市', street: '2-2-2', building: '3F' },
+          { emp_id: 3, prefecture: '愛知県', city: '名古屋市', street: '3-3-3', building: '' }
+        ],
+        phones: [
+          { emp_id: 1, phone: '03-1111-1111' },
+          { emp_id: 1, phone: '090-1111-1111' },
+          { emp_id: 2, phone: '06-2222-2222' },
+          { emp_id: 3, phone: '052-3333-3333' },
+          { emp_id: 3, phone: '090-3333-3333' }
+        ],
+        departments: [
+          { dept_id: 1, department: '営業部', manager: '山田部長' },
+          { dept_id: 2, department: '技術部', manager: '鈴木部長' }
+        ]
+      },
+      improvements: ['重複する部署情報を別テーブルに分離', '住所と電話番号も分離']
+    },
+    {
+      title: '第3正規形（3NF）',
+      description: '推移関数従属を除去し、データを完全に正規化',
+      tables: {
+        employees: [
+          { emp_id: 1, name: '田中太郎', dept_id: 1 },
+          { emp_id: 2, name: '佐藤花子', dept_id: 2 },
+          { emp_id: 3, name: '鈴木一郎', dept_id: 1 }
+        ],
+        departments: [
+          { dept_id: 1, dept_name: '営業部', manager_id: 101 },
+          { dept_id: 2, dept_name: '技術部', manager_id: 102 }
+        ],
+        managers: [
+          { manager_id: 101, manager_name: '山田部長' },
+          { manager_id: 102, manager_name: '鈴木部長' }
+        ],
+        addresses: [
+          { emp_id: 1, prefecture: '東京都', city: '渋谷区', street: '1-1-1', building: '2F' },
+          { emp_id: 2, prefecture: '大阪府', city: '大阪市', street: '2-2-2', building: '3F' },
+          { emp_id: 3, prefecture: '愛知県', city: '名古屋市', street: '3-3-3', building: '' }
+        ],
+        phones: [
+          { emp_id: 1, phone: '03-1111-1111' },
+          { emp_id: 1, phone: '090-1111-1111' },
+          { emp_id: 2, phone: '06-2222-2222' },
+          { emp_id: 3, phone: '052-3333-3333' },
+          { emp_id: 3, phone: '090-3333-3333' }
+        ]
+      },
+      improvements: ['部署の管理者情報を別テーブルに分離', '全ての推移関数従属を除去']
+    }
+  ];
+
+  const nextStep = () => {
+    if (currentStep < normalizationSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const resetAnimation = () => {
+    setCurrentStep(0);
+    setIsAnimating(false);
+  };
+
+  const step = normalizationSteps[currentStep];
+
+  return (
+    <div className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h4 className="text-2xl font-semibold text-cyan-600 dark:text-cyan-400">
+          {step.title}
+        </h4>
+        <div className="flex gap-2">
+          <button
+            onClick={prevStep}
+            disabled={currentStep === 0}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+          >
+            ← 前へ
+          </button>
+          <button
+            onClick={nextStep}
+            disabled={currentStep === normalizationSteps.length - 1}
+            className="px-4 py-2 bg-cyan-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyan-600"
+          >
+            次へ →
+          </button>
+          <button
+            onClick={resetAnimation}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+          >
+            リセット
+          </button>
+        </div>
+      </div>
+
+      <p className="text-gray-600 dark:text-gray-300 mb-4">
+        {step.description}
+      </p>
+
+      {/* ステップインジケーター */}
+      <div className="flex mb-6">
+        {normalizationSteps.map((_, index) => (
+          <div
+            key={index}
+            className={`flex-1 h-2 mx-1 rounded ${
+              index <= currentStep ? 'bg-cyan-500' : 'bg-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* データ表示 */}
+      <div className="space-y-4">
+        {currentStep <= 1 && step.data && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-gray-300 dark:border-gray-600">
+              <thead className="bg-gray-100 dark:bg-gray-600">
+                <tr>
+                  {Object.keys(step.data[0] || {}).map((header) => (
+                    <th key={header} className="border px-2 py-1 text-left">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {step.data.map((row: any, index: number) => (
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-600">
+                    {Object.values(row).map((cell: any, cellIndex: number) => (
+                      <td key={cellIndex} className="border px-2 py-1">
+                        {String(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {currentStep >= 2 && step.tables && (
+          <div className="grid md:grid-cols-2 gap-4">
+            {Object.entries(step.tables).map(([tableName, tableData]: [string, any[]]) => (
+              <div key={tableName} className="border rounded">
+                <h5 className="bg-cyan-100 dark:bg-cyan-900 px-3 py-2 font-semibold capitalize">
+                  {tableName}テーブル
+                </h5>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 dark:bg-gray-600">
+                    <tr>
+                      {Object.keys(tableData[0] || {}).map((header) => (
+                        <th key={header} className="border px-2 py-1 text-left text-xs">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData.map((row: any, index: number) => (
+                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-600">
+                        {Object.values(row).map((cell: any, cellIndex: number) => (
+                          <td key={cellIndex} className="border px-2 py-1 text-xs">
+                            {String(cell)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 改善点の表示 */}
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+          <h5 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+            {currentStep === 0 ? '問題点:' : '改善点:'}
+          </h5>
+          <ul className="list-disc list-inside text-sm text-green-700 dark:text-green-300">
+            {(step.issues || step.improvements || []).map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const databaseConcepts = [
   {
     id: 'sql-basics',
@@ -243,30 +477,8 @@ export default function DatabasePage() {
               {selectedConcept === 'database-design' && currentConcept.designPrinciples && (
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">正規化</h3>
-                    <div className="space-y-4">
-                      {currentConcept.designPrinciples.map((principle, index) => (
-                        <div key={index} className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow">
-                          <h4 className="text-lg font-semibold text-cyan-600 dark:text-cyan-400 mb-2">
-                            {principle.name}
-                          </h4>
-                          <p className="text-gray-600 dark:text-gray-300 mb-3">
-                            <span className="font-medium">ルール:</span> {principle.rule}
-                          </p>
-                          <p className="text-gray-600 dark:text-gray-300 mb-3">
-                            <span className="font-medium">例:</span> {principle.example}
-                          </p>
-                          <div>
-                            <span className="font-medium text-gray-800 dark:text-white">効果:</span>
-                            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 ml-4">
-                              {principle.benefits.map((benefit, benefitIndex) => (
-                                <li key={benefitIndex}>{benefit}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">正規化アニメーション</h3>
+                    <NormalizationAnimation />
                   </div>
 
                   {currentConcept.entities && (
